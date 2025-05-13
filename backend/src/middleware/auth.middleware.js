@@ -38,7 +38,7 @@ export const authMiddleware = async (req, res, next) => {
         });
 
         if (!user) {
-           return  res.status(404).json({
+            return res.status(404).json({
                 success: false,
                 message: "Unauthorized - User not found"
             })
@@ -52,6 +52,39 @@ export const authMiddleware = async (req, res, next) => {
         res.status(500).json({
             success: false,
             message: "Internal Server Error in authention-middleware while authentication user "
+        })
+    }
+}
+
+
+export const checkAdmin = async (req, res, next) => {
+
+    try {
+        const userId = req.user.id
+        const user = await db.user.findUnique({
+            where: {
+                id: userId
+            },
+            select: {
+                role: true
+            }
+        })
+
+        if (!user || user.role !== "ADMIN") {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized - User is not admin"
+            })
+        }
+
+        next();
+
+    } catch (err) {
+        console.log("error while authenticating user", err)
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error in authention-middleware while authentication user-Admin ",
+            error: err
         })
     }
 }
