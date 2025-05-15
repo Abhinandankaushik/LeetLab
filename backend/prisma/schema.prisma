@@ -25,7 +25,7 @@ model User {
   Problem   Problem[]
 }
 
-enum Diffuculty {
+enum Defficulty {
   EASY
   MEDIUM
   HARD
@@ -35,10 +35,10 @@ model Problem {
   id          String     @id @default(uuid())
   title       String
   description String
-  defficulty  Diffuculty
+  defficulty  Defficulty
   tags        String[] //[tag1,tag2]
   userId      String
-  exaples     Json
+  examples     Json
   constraints String
   hints       String?
   editorial   String?

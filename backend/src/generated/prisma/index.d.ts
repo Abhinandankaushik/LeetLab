@@ -36,13 +36,13 @@ export namespace $Enums {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole]
 
 
-export const Diffuculty: {
+export const Defficulty: {
   EASY: 'EASY',
   MEDIUM: 'MEDIUM',
   HARD: 'HARD'
 };
 
-export type Diffuculty = (typeof Diffuculty)[keyof typeof Diffuculty]
+export type Defficulty = (typeof Defficulty)[keyof typeof Defficulty]
 
 }
 
@@ -50,9 +50,9 @@ export type UserRole = $Enums.UserRole
 
 export const UserRole: typeof $Enums.UserRole
 
-export type Diffuculty = $Enums.Diffuculty
+export type Defficulty = $Enums.Defficulty
 
-export const Diffuculty: typeof $Enums.Diffuculty
+export const Defficulty: typeof $Enums.Defficulty
 
 /**
  * ##  Prisma Client ʲˢ
@@ -2143,7 +2143,7 @@ export namespace Prisma {
     id: string | null
     title: string | null
     description: string | null
-    defficulty: $Enums.Diffuculty | null
+    defficulty: $Enums.Defficulty | null
     userId: string | null
     constraints: string | null
     hints: string | null
@@ -2156,7 +2156,7 @@ export namespace Prisma {
     id: string | null
     title: string | null
     description: string | null
-    defficulty: $Enums.Diffuculty | null
+    defficulty: $Enums.Defficulty | null
     userId: string | null
     constraints: string | null
     hints: string | null
@@ -2172,7 +2172,7 @@ export namespace Prisma {
     defficulty: number
     tags: number
     userId: number
-    exaples: number
+    examples: number
     constraints: number
     hints: number
     editorial: number
@@ -2218,7 +2218,7 @@ export namespace Prisma {
     defficulty?: true
     tags?: true
     userId?: true
-    exaples?: true
+    examples?: true
     constraints?: true
     hints?: true
     editorial?: true
@@ -2306,10 +2306,10 @@ export namespace Prisma {
     id: string
     title: string
     description: string
-    defficulty: $Enums.Diffuculty
+    defficulty: $Enums.Defficulty
     tags: string[]
     userId: string
-    exaples: JsonValue
+    examples: JsonValue
     constraints: string
     hints: string | null
     editorial: string | null
@@ -2344,7 +2344,7 @@ export namespace Prisma {
     defficulty?: boolean
     tags?: boolean
     userId?: boolean
-    exaples?: boolean
+    examples?: boolean
     constraints?: boolean
     hints?: boolean
     editorial?: boolean
@@ -2363,7 +2363,7 @@ export namespace Prisma {
     defficulty?: boolean
     tags?: boolean
     userId?: boolean
-    exaples?: boolean
+    examples?: boolean
     constraints?: boolean
     hints?: boolean
     editorial?: boolean
@@ -2382,7 +2382,7 @@ export namespace Prisma {
     defficulty?: boolean
     tags?: boolean
     userId?: boolean
-    exaples?: boolean
+    examples?: boolean
     constraints?: boolean
     hints?: boolean
     editorial?: boolean
@@ -2401,7 +2401,7 @@ export namespace Prisma {
     defficulty?: boolean
     tags?: boolean
     userId?: boolean
-    exaples?: boolean
+    examples?: boolean
     constraints?: boolean
     hints?: boolean
     editorial?: boolean
@@ -2412,7 +2412,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type ProblemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "defficulty" | "tags" | "userId" | "exaples" | "constraints" | "hints" | "editorial" | "testcases" | "codeSnippets" | "referenceSolutions" | "createdAt" | "updatedAt", ExtArgs["result"]["problem"]>
+  export type ProblemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "title" | "description" | "defficulty" | "tags" | "userId" | "examples" | "constraints" | "hints" | "editorial" | "testcases" | "codeSnippets" | "referenceSolutions" | "createdAt" | "updatedAt", ExtArgs["result"]["problem"]>
   export type ProblemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -2432,10 +2432,10 @@ export namespace Prisma {
       id: string
       title: string
       description: string
-      defficulty: $Enums.Diffuculty
+      defficulty: $Enums.Defficulty
       tags: string[]
       userId: string
-      exaples: Prisma.JsonValue
+      examples: Prisma.JsonValue
       constraints: string
       hints: string | null
       editorial: string | null
@@ -2871,10 +2871,10 @@ export namespace Prisma {
     readonly id: FieldRef<"Problem", 'String'>
     readonly title: FieldRef<"Problem", 'String'>
     readonly description: FieldRef<"Problem", 'String'>
-    readonly defficulty: FieldRef<"Problem", 'Diffuculty'>
+    readonly defficulty: FieldRef<"Problem", 'Defficulty'>
     readonly tags: FieldRef<"Problem", 'String[]'>
     readonly userId: FieldRef<"Problem", 'String'>
-    readonly exaples: FieldRef<"Problem", 'Json'>
+    readonly examples: FieldRef<"Problem", 'Json'>
     readonly constraints: FieldRef<"Problem", 'String'>
     readonly hints: FieldRef<"Problem", 'String'>
     readonly editorial: FieldRef<"Problem", 'String'>
@@ -3332,7 +3332,7 @@ export namespace Prisma {
     defficulty: 'defficulty',
     tags: 'tags',
     userId: 'userId',
-    exaples: 'exaples',
+    examples: 'examples',
     constraints: 'constraints',
     hints: 'hints',
     editorial: 'editorial',
@@ -3434,16 +3434,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Diffuculty'
+   * Reference to a field of type 'Defficulty'
    */
-  export type EnumDiffucultyFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Diffuculty'>
+  export type EnumDefficultyFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Defficulty'>
     
 
 
   /**
-   * Reference to a field of type 'Diffuculty[]'
+   * Reference to a field of type 'Defficulty[]'
    */
-  export type ListEnumDiffucultyFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Diffuculty[]'>
+  export type ListEnumDefficultyFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Defficulty[]'>
     
 
 
@@ -3555,10 +3555,10 @@ export namespace Prisma {
     id?: StringFilter<"Problem"> | string
     title?: StringFilter<"Problem"> | string
     description?: StringFilter<"Problem"> | string
-    defficulty?: EnumDiffucultyFilter<"Problem"> | $Enums.Diffuculty
+    defficulty?: EnumDefficultyFilter<"Problem"> | $Enums.Defficulty
     tags?: StringNullableListFilter<"Problem">
     userId?: StringFilter<"Problem"> | string
-    exaples?: JsonFilter<"Problem">
+    examples?: JsonFilter<"Problem">
     constraints?: StringFilter<"Problem"> | string
     hints?: StringNullableFilter<"Problem"> | string | null
     editorial?: StringNullableFilter<"Problem"> | string | null
@@ -3577,7 +3577,7 @@ export namespace Prisma {
     defficulty?: SortOrder
     tags?: SortOrder
     userId?: SortOrder
-    exaples?: SortOrder
+    examples?: SortOrder
     constraints?: SortOrder
     hints?: SortOrderInput | SortOrder
     editorial?: SortOrderInput | SortOrder
@@ -3596,10 +3596,10 @@ export namespace Prisma {
     NOT?: ProblemWhereInput | ProblemWhereInput[]
     title?: StringFilter<"Problem"> | string
     description?: StringFilter<"Problem"> | string
-    defficulty?: EnumDiffucultyFilter<"Problem"> | $Enums.Diffuculty
+    defficulty?: EnumDefficultyFilter<"Problem"> | $Enums.Defficulty
     tags?: StringNullableListFilter<"Problem">
     userId?: StringFilter<"Problem"> | string
-    exaples?: JsonFilter<"Problem">
+    examples?: JsonFilter<"Problem">
     constraints?: StringFilter<"Problem"> | string
     hints?: StringNullableFilter<"Problem"> | string | null
     editorial?: StringNullableFilter<"Problem"> | string | null
@@ -3618,7 +3618,7 @@ export namespace Prisma {
     defficulty?: SortOrder
     tags?: SortOrder
     userId?: SortOrder
-    exaples?: SortOrder
+    examples?: SortOrder
     constraints?: SortOrder
     hints?: SortOrderInput | SortOrder
     editorial?: SortOrderInput | SortOrder
@@ -3639,10 +3639,10 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Problem"> | string
     title?: StringWithAggregatesFilter<"Problem"> | string
     description?: StringWithAggregatesFilter<"Problem"> | string
-    defficulty?: EnumDiffucultyWithAggregatesFilter<"Problem"> | $Enums.Diffuculty
+    defficulty?: EnumDefficultyWithAggregatesFilter<"Problem"> | $Enums.Defficulty
     tags?: StringNullableListFilter<"Problem">
     userId?: StringWithAggregatesFilter<"Problem"> | string
-    exaples?: JsonWithAggregatesFilter<"Problem">
+    examples?: JsonWithAggregatesFilter<"Problem">
     constraints?: StringWithAggregatesFilter<"Problem"> | string
     hints?: StringNullableWithAggregatesFilter<"Problem"> | string | null
     editorial?: StringNullableWithAggregatesFilter<"Problem"> | string | null
@@ -3738,9 +3738,9 @@ export namespace Prisma {
     id?: string
     title: string
     description: string
-    defficulty: $Enums.Diffuculty
+    defficulty: $Enums.Defficulty
     tags?: ProblemCreatetagsInput | string[]
-    exaples: JsonNullValueInput | InputJsonValue
+    examples: JsonNullValueInput | InputJsonValue
     constraints: string
     hints?: string | null
     editorial?: string | null
@@ -3756,10 +3756,10 @@ export namespace Prisma {
     id?: string
     title: string
     description: string
-    defficulty: $Enums.Diffuculty
+    defficulty: $Enums.Defficulty
     tags?: ProblemCreatetagsInput | string[]
     userId: string
-    exaples: JsonNullValueInput | InputJsonValue
+    examples: JsonNullValueInput | InputJsonValue
     constraints: string
     hints?: string | null
     editorial?: string | null
@@ -3774,9 +3774,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    defficulty?: EnumDiffucultyFieldUpdateOperationsInput | $Enums.Diffuculty
+    defficulty?: EnumDefficultyFieldUpdateOperationsInput | $Enums.Defficulty
     tags?: ProblemUpdatetagsInput | string[]
-    exaples?: JsonNullValueInput | InputJsonValue
+    examples?: JsonNullValueInput | InputJsonValue
     constraints?: StringFieldUpdateOperationsInput | string
     hints?: NullableStringFieldUpdateOperationsInput | string | null
     editorial?: NullableStringFieldUpdateOperationsInput | string | null
@@ -3792,10 +3792,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    defficulty?: EnumDiffucultyFieldUpdateOperationsInput | $Enums.Diffuculty
+    defficulty?: EnumDefficultyFieldUpdateOperationsInput | $Enums.Defficulty
     tags?: ProblemUpdatetagsInput | string[]
     userId?: StringFieldUpdateOperationsInput | string
-    exaples?: JsonNullValueInput | InputJsonValue
+    examples?: JsonNullValueInput | InputJsonValue
     constraints?: StringFieldUpdateOperationsInput | string
     hints?: NullableStringFieldUpdateOperationsInput | string | null
     editorial?: NullableStringFieldUpdateOperationsInput | string | null
@@ -3810,10 +3810,10 @@ export namespace Prisma {
     id?: string
     title: string
     description: string
-    defficulty: $Enums.Diffuculty
+    defficulty: $Enums.Defficulty
     tags?: ProblemCreatetagsInput | string[]
     userId: string
-    exaples: JsonNullValueInput | InputJsonValue
+    examples: JsonNullValueInput | InputJsonValue
     constraints: string
     hints?: string | null
     editorial?: string | null
@@ -3828,9 +3828,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    defficulty?: EnumDiffucultyFieldUpdateOperationsInput | $Enums.Diffuculty
+    defficulty?: EnumDefficultyFieldUpdateOperationsInput | $Enums.Defficulty
     tags?: ProblemUpdatetagsInput | string[]
-    exaples?: JsonNullValueInput | InputJsonValue
+    examples?: JsonNullValueInput | InputJsonValue
     constraints?: StringFieldUpdateOperationsInput | string
     hints?: NullableStringFieldUpdateOperationsInput | string | null
     editorial?: NullableStringFieldUpdateOperationsInput | string | null
@@ -3845,10 +3845,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    defficulty?: EnumDiffucultyFieldUpdateOperationsInput | $Enums.Diffuculty
+    defficulty?: EnumDefficultyFieldUpdateOperationsInput | $Enums.Defficulty
     tags?: ProblemUpdatetagsInput | string[]
     userId?: StringFieldUpdateOperationsInput | string
-    exaples?: JsonNullValueInput | InputJsonValue
+    examples?: JsonNullValueInput | InputJsonValue
     constraints?: StringFieldUpdateOperationsInput | string
     hints?: NullableStringFieldUpdateOperationsInput | string | null
     editorial?: NullableStringFieldUpdateOperationsInput | string | null
@@ -4015,11 +4015,11 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type EnumDiffucultyFilter<$PrismaModel = never> = {
-    equals?: $Enums.Diffuculty | EnumDiffucultyFieldRefInput<$PrismaModel>
-    in?: $Enums.Diffuculty[] | ListEnumDiffucultyFieldRefInput<$PrismaModel>
-    notIn?: $Enums.Diffuculty[] | ListEnumDiffucultyFieldRefInput<$PrismaModel>
-    not?: NestedEnumDiffucultyFilter<$PrismaModel> | $Enums.Diffuculty
+  export type EnumDefficultyFilter<$PrismaModel = never> = {
+    equals?: $Enums.Defficulty | EnumDefficultyFieldRefInput<$PrismaModel>
+    in?: $Enums.Defficulty[] | ListEnumDefficultyFieldRefInput<$PrismaModel>
+    notIn?: $Enums.Defficulty[] | ListEnumDefficultyFieldRefInput<$PrismaModel>
+    not?: NestedEnumDefficultyFilter<$PrismaModel> | $Enums.Defficulty
   }
 
   export type StringNullableListFilter<$PrismaModel = never> = {
@@ -4065,7 +4065,7 @@ export namespace Prisma {
     defficulty?: SortOrder
     tags?: SortOrder
     userId?: SortOrder
-    exaples?: SortOrder
+    examples?: SortOrder
     constraints?: SortOrder
     hints?: SortOrder
     editorial?: SortOrder
@@ -4102,14 +4102,14 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
-  export type EnumDiffucultyWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.Diffuculty | EnumDiffucultyFieldRefInput<$PrismaModel>
-    in?: $Enums.Diffuculty[] | ListEnumDiffucultyFieldRefInput<$PrismaModel>
-    notIn?: $Enums.Diffuculty[] | ListEnumDiffucultyFieldRefInput<$PrismaModel>
-    not?: NestedEnumDiffucultyWithAggregatesFilter<$PrismaModel> | $Enums.Diffuculty
+  export type EnumDefficultyWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.Defficulty | EnumDefficultyFieldRefInput<$PrismaModel>
+    in?: $Enums.Defficulty[] | ListEnumDefficultyFieldRefInput<$PrismaModel>
+    notIn?: $Enums.Defficulty[] | ListEnumDefficultyFieldRefInput<$PrismaModel>
+    not?: NestedEnumDefficultyWithAggregatesFilter<$PrismaModel> | $Enums.Defficulty
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumDiffucultyFilter<$PrismaModel>
-    _max?: NestedEnumDiffucultyFilter<$PrismaModel>
+    _min?: NestedEnumDefficultyFilter<$PrismaModel>
+    _max?: NestedEnumDefficultyFilter<$PrismaModel>
   }
   export type JsonWithAggregatesFilter<$PrismaModel = never> =
     | PatchUndefined<
@@ -4206,8 +4206,8 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput
   }
 
-  export type EnumDiffucultyFieldUpdateOperationsInput = {
-    set?: $Enums.Diffuculty
+  export type EnumDefficultyFieldUpdateOperationsInput = {
+    set?: $Enums.Defficulty
   }
 
   export type ProblemUpdatetagsInput = {
@@ -4349,21 +4349,21 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type NestedEnumDiffucultyFilter<$PrismaModel = never> = {
-    equals?: $Enums.Diffuculty | EnumDiffucultyFieldRefInput<$PrismaModel>
-    in?: $Enums.Diffuculty[] | ListEnumDiffucultyFieldRefInput<$PrismaModel>
-    notIn?: $Enums.Diffuculty[] | ListEnumDiffucultyFieldRefInput<$PrismaModel>
-    not?: NestedEnumDiffucultyFilter<$PrismaModel> | $Enums.Diffuculty
+  export type NestedEnumDefficultyFilter<$PrismaModel = never> = {
+    equals?: $Enums.Defficulty | EnumDefficultyFieldRefInput<$PrismaModel>
+    in?: $Enums.Defficulty[] | ListEnumDefficultyFieldRefInput<$PrismaModel>
+    notIn?: $Enums.Defficulty[] | ListEnumDefficultyFieldRefInput<$PrismaModel>
+    not?: NestedEnumDefficultyFilter<$PrismaModel> | $Enums.Defficulty
   }
 
-  export type NestedEnumDiffucultyWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.Diffuculty | EnumDiffucultyFieldRefInput<$PrismaModel>
-    in?: $Enums.Diffuculty[] | ListEnumDiffucultyFieldRefInput<$PrismaModel>
-    notIn?: $Enums.Diffuculty[] | ListEnumDiffucultyFieldRefInput<$PrismaModel>
-    not?: NestedEnumDiffucultyWithAggregatesFilter<$PrismaModel> | $Enums.Diffuculty
+  export type NestedEnumDefficultyWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.Defficulty | EnumDefficultyFieldRefInput<$PrismaModel>
+    in?: $Enums.Defficulty[] | ListEnumDefficultyFieldRefInput<$PrismaModel>
+    notIn?: $Enums.Defficulty[] | ListEnumDefficultyFieldRefInput<$PrismaModel>
+    not?: NestedEnumDefficultyWithAggregatesFilter<$PrismaModel> | $Enums.Defficulty
     _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumDiffucultyFilter<$PrismaModel>
-    _max?: NestedEnumDiffucultyFilter<$PrismaModel>
+    _min?: NestedEnumDefficultyFilter<$PrismaModel>
+    _max?: NestedEnumDefficultyFilter<$PrismaModel>
   }
   export type NestedJsonFilter<$PrismaModel = never> =
     | PatchUndefined<
@@ -4393,9 +4393,9 @@ export namespace Prisma {
     id?: string
     title: string
     description: string
-    defficulty: $Enums.Diffuculty
+    defficulty: $Enums.Defficulty
     tags?: ProblemCreatetagsInput | string[]
-    exaples: JsonNullValueInput | InputJsonValue
+    examples: JsonNullValueInput | InputJsonValue
     constraints: string
     hints?: string | null
     editorial?: string | null
@@ -4410,9 +4410,9 @@ export namespace Prisma {
     id?: string
     title: string
     description: string
-    defficulty: $Enums.Diffuculty
+    defficulty: $Enums.Defficulty
     tags?: ProblemCreatetagsInput | string[]
-    exaples: JsonNullValueInput | InputJsonValue
+    examples: JsonNullValueInput | InputJsonValue
     constraints: string
     hints?: string | null
     editorial?: string | null
@@ -4456,10 +4456,10 @@ export namespace Prisma {
     id?: StringFilter<"Problem"> | string
     title?: StringFilter<"Problem"> | string
     description?: StringFilter<"Problem"> | string
-    defficulty?: EnumDiffucultyFilter<"Problem"> | $Enums.Diffuculty
+    defficulty?: EnumDefficultyFilter<"Problem"> | $Enums.Defficulty
     tags?: StringNullableListFilter<"Problem">
     userId?: StringFilter<"Problem"> | string
-    exaples?: JsonFilter<"Problem">
+    examples?: JsonFilter<"Problem">
     constraints?: StringFilter<"Problem"> | string
     hints?: StringNullableFilter<"Problem"> | string | null
     editorial?: StringNullableFilter<"Problem"> | string | null
@@ -4534,9 +4534,9 @@ export namespace Prisma {
     id?: string
     title: string
     description: string
-    defficulty: $Enums.Diffuculty
+    defficulty: $Enums.Defficulty
     tags?: ProblemCreatetagsInput | string[]
-    exaples: JsonNullValueInput | InputJsonValue
+    examples: JsonNullValueInput | InputJsonValue
     constraints: string
     hints?: string | null
     editorial?: string | null
@@ -4551,9 +4551,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    defficulty?: EnumDiffucultyFieldUpdateOperationsInput | $Enums.Diffuculty
+    defficulty?: EnumDefficultyFieldUpdateOperationsInput | $Enums.Defficulty
     tags?: ProblemUpdatetagsInput | string[]
-    exaples?: JsonNullValueInput | InputJsonValue
+    examples?: JsonNullValueInput | InputJsonValue
     constraints?: StringFieldUpdateOperationsInput | string
     hints?: NullableStringFieldUpdateOperationsInput | string | null
     editorial?: NullableStringFieldUpdateOperationsInput | string | null
@@ -4568,9 +4568,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    defficulty?: EnumDiffucultyFieldUpdateOperationsInput | $Enums.Diffuculty
+    defficulty?: EnumDefficultyFieldUpdateOperationsInput | $Enums.Defficulty
     tags?: ProblemUpdatetagsInput | string[]
-    exaples?: JsonNullValueInput | InputJsonValue
+    examples?: JsonNullValueInput | InputJsonValue
     constraints?: StringFieldUpdateOperationsInput | string
     hints?: NullableStringFieldUpdateOperationsInput | string | null
     editorial?: NullableStringFieldUpdateOperationsInput | string | null
@@ -4585,9 +4585,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     description?: StringFieldUpdateOperationsInput | string
-    defficulty?: EnumDiffucultyFieldUpdateOperationsInput | $Enums.Diffuculty
+    defficulty?: EnumDefficultyFieldUpdateOperationsInput | $Enums.Defficulty
     tags?: ProblemUpdatetagsInput | string[]
-    exaples?: JsonNullValueInput | InputJsonValue
+    examples?: JsonNullValueInput | InputJsonValue
     constraints?: StringFieldUpdateOperationsInput | string
     hints?: NullableStringFieldUpdateOperationsInput | string | null
     editorial?: NullableStringFieldUpdateOperationsInput | string | null
