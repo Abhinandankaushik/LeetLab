@@ -1,3 +1,4 @@
+import { isCancel } from "axios";
 import { db } from "../libs/db.js"
 import { getJudge0LanguageId, submitBatch, pollBatchResults } from "../libs/judge0.lib.js"
 
@@ -197,5 +198,40 @@ export const deleteProblem = async (req, res) => {
 }
 
 export const getSolvedProblemByUser = async (req, res) => {
+
+    try {
+        const problem = await db.problem.findMany({
+            where: {
+                solvedBy: {
+                    some: {
+                        userId: req.user.id  //[pr1,pr2,pr3]
+                    }
+                }
+            },
+            include: {
+                solvedBy: {
+                    where: {
+                        userId: req.user.id  //if(pr1.userId == req.user.id)  retunr [pr1,pr2]
+                    }
+                }
+            }
+        })
+
+        console.log(problem);
+
+
+        res.status(200).json({
+            success: true,
+            message: "Problem fetched successfully",
+            problems: problem
+        })
+
+    } catch (err) {
+        res.status(400).json({
+            success: false,
+            message: "Error while fetching problem solved by currently logedIn user",
+            error: err
+        })
+    }
 }
 

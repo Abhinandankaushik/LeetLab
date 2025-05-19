@@ -25,6 +25,7 @@ model User {
   Problem       Problem[]
   Submission    Submission[]
   ProblemSolved ProblemSolved[]
+  Playlist      Playlist[]
 }
 
 enum Defficulty {
@@ -52,9 +53,10 @@ model Problem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  submission Submission[]
-  solvedBy   ProblemSolved[]
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  submission        Submission[]
+  solvedBy          ProblemSolved[]
+  ProblemsPlaylist ProblemInPlaylist[]
 }
 
 model Submission {
@@ -113,4 +115,35 @@ model ProblemSolved {
   problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
 
   @@unique([userId, problemId])
+}
+
+model Playlist {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  problems ProblemInPlaylist[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([name, userId]) //unique playlist name per user
+}
+
+model ProblemInPlaylist {
+  id String @id @default(uuid())
+
+  playlistId String
+  problemId  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  problem   Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, problemId]) //unique problem per playlist (ek plalist me same problem 2 baar add nahi ho sakta logical?)
 }
