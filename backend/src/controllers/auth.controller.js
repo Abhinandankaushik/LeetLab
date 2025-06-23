@@ -29,7 +29,7 @@ export const register = async (req, res) => {
                 email,
                 password: hashedPassword,
                 name,
-                role: UserRole.USER
+                role: UserRole.USER, // Default role is USER
             }
         });
 
