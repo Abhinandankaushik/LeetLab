@@ -41,6 +41,7 @@ export const createProblem = async (req, res) => {
             const tokens = submissionResults.map((res) => res.token);
 
             const results = await pollBatchResults(tokens);
+         
 
             for (let i = 0; i < results.length; i++) {
                 const result = results[i];
@@ -89,7 +90,15 @@ export const createProblem = async (req, res) => {
 export const getAllProblem = async (req, res) => {
 
     try {
-        const allProblem = await db.problem.findMany();
+        const allProblem = await db.problem.findMany({
+            include: {
+                solvedBy: {
+                    where: {
+                        userId: req.user.id // to get only the problems solved by the current user
+                    }
+                }
+            }
+        });
 
 
         if (!allProblem) {

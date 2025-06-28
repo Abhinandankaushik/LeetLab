@@ -236,7 +236,7 @@ exports.UserRole = exports.$Enums.UserRole = {
   USER: 'USER'
 };
 
-exports.Defficulty = exports.$Enums.Defficulty = {
+exports.defficulty = exports.$Enums.defficulty = {
   EASY: 'EASY',
   MEDIUM: 'MEDIUM',
   HARD: 'HARD'

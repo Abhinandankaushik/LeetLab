@@ -28,7 +28,7 @@ model User {
   Playlist      Playlist[]
 }
 
-enum Defficulty {
+enum defficulty {
   EASY
   MEDIUM
   HARD
@@ -38,7 +38,7 @@ model Problem {
   id          String     @id @default(uuid())
   title       String
   description String
-  defficulty  Defficulty
+  defficulty  defficulty
   tags        String[] //[tag1,tag2]
   userId      String
   examples    Json

@@ -1,7 +1,22 @@
-
-
+import { useEffect } from "react";
+import { Loader } from "lucide-react";
+import { useProblemStore } from '../store/useProblemStore.js'
+import ProblemTable from "../components/ProblemTable.jsx";
+import Editor from "@monaco-editor/react";
 const HomePage = () => {
- 
+
+  const { getAllProblem, isProlemsLoading, problems } = useProblemStore();
+
+  useEffect(() => {
+    getAllProblem();
+  }, [getAllProblem]);
+
+  if (isProlemsLoading) {
+    <div>
+      <Loader className="h-25 w-25 animate-spin " />
+    </div>
+    return;
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center mt-14 px-4">
@@ -15,10 +30,20 @@ const HomePage = () => {
         interviews and helps you to improve your coding skills by solving coding
         problems
       </p>
+ 
+  
+      {
+        
+        problems.length > 0 ? (<ProblemTable problems={problems} />) : (
+          <p className="mt-4 text-center text-lg font-semibold text-gray-500 dark:text-gray-400 z-10">
+            No problems found
+          </p>
+        )
+      }
 
-     
+
     </div>
-    
+
   );
 };
 

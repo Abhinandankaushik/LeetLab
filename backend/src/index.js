@@ -23,9 +23,9 @@ app.use(cors({
 }));
 
 app.use("/api/v1/auth",authRoute);
-app.use("/api/v1/problem",problemRoute);
+app.use("/api/v1/problems",problemRoute);
 app.use("/api/v1/execute-code",executionRoute);
-app.use("/api/v1/submission",submissionRoute);
+app.use("/api/v1/submissions",submissionRoute);
 app.use("/api/v1/playlist",playlistRoute);
 
 app.listen(port, () => {
