@@ -1,7 +1,13 @@
+
 import React, { useState, useMemo } from 'react'
 import { useAuthStore } from '../store/useAuthStore.js'
 import { Link } from 'react-router-dom'
-import { Bookmark, PencilIcon, Trash, TrashIcon, Plus } from 'lucide-react'
+import { Bookmark, PencilIcon, Trash, TrashIcon, Plus, Loader2 } from 'lucide-react'
+import { useAction } from '../store/useAction.js'
+import { usePlaylistStore } from '../store/usePlaylistStore.js'
+import CreatePlaylistModal from './CreatePlaylistModal.jsx'
+import AddToPlaylistModal from './AddToPlaylistModal.jsx'
+
 const ProblemTable = ({ problems }) => {
 
     const { authUser } = useAuthStore();
@@ -10,6 +16,13 @@ const ProblemTable = ({ problems }) => {
     const [difficulty, setDifficulty] = useState('ALL');
     const [selectedTags, setSelectedTags] = useState('ALL');
     const [currentPage, setCurrentPage] = useState(1);
+    const { isDeletingProblem, onDeleteProblem } = useAction();
+
+    const { createPlaylist } = usePlaylistStore()
+
+    const [ isCreateModelOpen, setIsCreateModelOpen ] = useState(false)
+    const [ isAddToPlaylistModelOpen, setIsAddToPlaylistModelOpen ] = useState(false)
+    const [selectedProblemId, setSelectedProblemId] = useState(null)
 
 
     console.log(problems)
@@ -50,7 +63,7 @@ const ProblemTable = ({ problems }) => {
 
     // filteredProblem = filteredProblem.length > 0 ? filteredProblem : problems
 
-    console.log("filtered ", filteredProblem)
+
 
     const itemPerPage = 5;
     const totalPage = Math.ceil(filteredProblem.length / itemPerPage);
@@ -62,10 +75,19 @@ const ProblemTable = ({ problems }) => {
 
     console.log("paginated", paginatedProblem)
 
-    const handleDelete = () => { }
 
-    const handleAddToPlaylist = () => { }
+   
+    const handleDelete = (id) => {
+        onDeleteProblem(id);
+    }
+    const handleCreatePlaylist = async (data) => {
+        await createPlaylist(data);
+    }
 
+    const handleAddToPlaylist = async (problemId) => {
+       setSelectedProblemId(problemId)
+       setIsAddToPlaylistModelOpen(true)
+    }
 
     return (
         <div className="w-full max-w-6xl mx-auto mt-10">
@@ -75,7 +97,7 @@ const ProblemTable = ({ problems }) => {
                 <h2 className="text-2xl font-bold">Problems</h2>
                 <button
                     className="btn btn-primary gap-2"
-                    onClick={(e) => () => { }}
+                    onClick={() => setIsCreateModelOpen(true)}
                 >
                     <Plus className="w-4 h-4" />
                     Create Playlist
@@ -186,11 +208,16 @@ const ProblemTable = ({ problems }) => {
                                             <div className="flex flex-col md:flex-row gap-2 items-start md:items-center">
                                                 {authUser?.role === "ADMIN" && (
                                                     <div className="flex gap-2">
-                                                        <button
+                                                        <button 
+                                                         
                                                             onClick={() => handleDelete(problem.id)}
                                                             className="btn btn-sm btn-error"
                                                         >
-                                                            <TrashIcon className="w-4 h-4 text-white" />
+                                                            {
+                                                                isDeletingProblem ? <Loader2 className="animate-spin w-4 h-4 " /> :
+                                                                    <TrashIcon className="w-4 h-4 text-white" />
+                                                            }
+
                                                         </button>
                                                         <button disabled className="btn btn-sm btn-warning">
                                                             <PencilIcon className="w-4 h-4 text-white" />
@@ -246,6 +273,19 @@ const ProblemTable = ({ problems }) => {
             </div >
 
 
+            {/* Modals */}
+            <CreatePlaylistModal
+                isOpen = {isCreateModelOpen}
+                onClose={() => setIsCreateModelOpen(false)}
+                onSubmit={handleCreatePlaylist}
+            />
+
+            <AddToPlaylistModal 
+                isOpen={isAddToPlaylistModelOpen}
+                onClose={() => setIsAddToPlaylistModelOpen(false)}
+                problemId={selectedProblemId}
+             
+            />
 
 
         </div >

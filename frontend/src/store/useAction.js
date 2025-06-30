@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 
 
 
-export const useActions = create((set)=>({
+export const useAction = create((set)=>({
     isDeletingProblem:false,
 
     onDeleteProblem:async(id)=>{
