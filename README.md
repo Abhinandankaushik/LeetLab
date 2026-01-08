@@ -18,7 +18,7 @@ LeetLab is a coding problem platform inspired by LeetCode, where users can **cre
 | **ORM** | Prisma |
 | **Database** | PostgreSQL |
 | **Authentication** | JWT (JSON Web Tokens), bcrypt.js |
-| **Deployment Ready** | Currently (NO) |
+| **Deployment Ready** | Currently (Yes) but On K8s which is currently not public |
 
 ...Inspired by Leetcode)
 
