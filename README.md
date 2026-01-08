@@ -21,5 +21,6 @@ LeetLab is a coding problem platform inspired by LeetCode, where users can **cre
 | **Deployment Ready** | Currently (Yes) but On K8s which is currently not public |
 | **Queue System** | Redis queue |
 |
+
 ...Inspired by Leetcode)
 
