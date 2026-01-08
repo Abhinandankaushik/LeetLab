@@ -1,4 +1,4 @@
-# LeetLab
+# LeetLab-V1
 LeetLab online coding platform where user can create and solve a problem ... (# LeetLab
 
 LeetLab is a coding problem platform inspired by LeetCode, where users can **create**, **post**, and **solve** coding problems. The goal is to provide a platform for learning and practicing algorithmic problems with a hands-on approach.
