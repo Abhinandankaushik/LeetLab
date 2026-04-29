@@ -5,6 +5,35 @@ import {
     MemoryStick as Memory,
     Calendar,
 } from "lucide-react";
+<<<<<<< HEAD
+
+const SubmissionsList = ({ submissions, isSubmissionLoading }) => {
+
+    // Helper function to safely parse JSON strings to JSON Object
+    const safeParse = (data) => {
+        try {
+            return JSON.parse(data);
+        } catch (error) {
+            console.log("error parsing json ", error);
+            return []
+        }
+
+    }
+
+    // Helper function to calculate average memory usage
+    const calculateAverageMemory = (memoryData) => {
+       
+       
+        const memoryArray = safeParse(memoryData).map((m) => parseFloat(m.split(" ")[0]))
+
+        if (memoryArray.length === 0) return 0
+
+        return (memoryArray.reduce((acc, curr) => acc + curr, 0) / memoryArray.length);
+
+
+
+    }
+=======
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 
@@ -28,6 +57,7 @@ const SubmissionsList = ({ submissions, isSubmissionLoading }) => {
         if (memoryArray.length === 0) return 0;
         return memoryArray.reduce((acc, curr) => acc + curr, 0) / memoryArray.length;
     };
+>>>>>>> fabcf1d (added homepage,dashboard)
 
     // Helper function to calculate average runtime
     const calculateAverageTime = (timeData) => {
@@ -35,6 +65,18 @@ const SubmissionsList = ({ submissions, isSubmissionLoading }) => {
             parseFloat(t.split(" ")[0])
         );
         if (timeArray.length === 0) return 0;
+<<<<<<< HEAD
+        return (timeArray.reduce((acc, curr) => acc + curr, 0) / timeArray.length);
+    };
+
+
+
+    // Loading state
+    if (isSubmissionLoading) {
+        return (
+            <div className="flex justify-center items-center p-8">
+                <span className="loading loading-spinner loading-lg text-primary"></span>
+=======
         return timeArray.reduce((acc, curr) => acc + curr, 0) / timeArray.length;
     };
 
@@ -48,6 +90,7 @@ const SubmissionsList = ({ submissions, isSubmissionLoading }) => {
                         Loading...
                     </div>
                 </div>
+>>>>>>> fabcf1d (added homepage,dashboard)
             </div>
         );
     }
@@ -55,16 +98,39 @@ const SubmissionsList = ({ submissions, isSubmissionLoading }) => {
     // No submissions state
     if (!submissions?.length) {
         return (
+<<<<<<< HEAD
+            <div className="text-center p-8">
+                <div className="text-base-content/70">No submissions yet</div>
+=======
             <div className="flex min-h-[200px] flex-col items-center justify-center rounded-3xl border border-base-300 bg-base-200/60 text-base-content/70">
                 <svg className="mb-4 h-12 w-12 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
                 <p className="text-lg font-medium">No submissions yet</p>
                 <p className="text-sm opacity-70">Start coding to see your submissions here!</p>
+>>>>>>> fabcf1d (added homepage,dashboard)
             </div>
         );
     }
 
+<<<<<<< HEAD
+    console.log("submissions", submissions)
+    return (
+        <div className="space-y-4">
+            {
+                submissions.map((submission) => {
+                    const avgMemory = calculateAverageMemory(submission.memory);
+                    const avgTime = calculateAverageTime(submission.time);
+                   
+
+                    return (
+                        <div
+                            key={submission.id}
+                            className="card bg-base-200 shadow-lg hover:shadow-xl transition-shadow rounded-lg"
+                        >
+                            <div className="card-body p-4">
+                                <div className="flex items-center justify-between">
+=======
     return (
         <div className="max-h-[600px] overflow-y-auto pr-2" style={{ scrollBehavior: 'smooth' }}>
             <div className="space-y-4">
@@ -83,10 +149,52 @@ const SubmissionsList = ({ submissions, isSubmissionLoading }) => {
                                 className="card border border-base-300 bg-base-100 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl"
                             >
                                 <Link to={`/submission/${submission.id}`} className="card-body flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+>>>>>>> fabcf1d (added homepage,dashboard)
                                     {/* Left Section: Status and Language */}
                                     <div className="flex items-center gap-4">
                                         {submission.status === "Accepted" ? (
                                             <div className="flex items-center gap-2 text-success">
+<<<<<<< HEAD
+                                                <CheckCircle2 className="w-6 h-6" />
+                                                <span className="font-semibold">Accepted</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 text-error">
+                                                <XCircle className="w-6 h-6" />
+                                                <span className="font-semibold">{submission.status}</span>
+                                            </div>
+                                        )}
+                                        <div className="badge badge-neutral">{submission.language}</div>
+                                    </div>
+
+                                    {/* Right Section: Runtime, Memory, and Date */}
+                                    <div className="flex items-center gap-4 text-base-content/70">
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="w-4 h-4" />
+                                            <span>{avgTime.toFixed(3)} s</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Memory className="w-4 h-4" />
+                                            <span>{avgMemory.toFixed(0)} KB</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Calendar className="w-4 h-4" />
+                                            <span>
+                                                {new Date(submission.createdAt).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+        </div>
+    );
+}
+
+export default SubmissionsList
+=======
                                                 <CheckCircle2 className="w-6 h-6 animate-pulse" />
                                                 <span className="font-semibold text-lg">Accepted</span>
                                             </div>
@@ -135,3 +243,4 @@ const SubmissionsList = ({ submissions, isSubmissionLoading }) => {
 };
 
 export default SubmissionsList;
+>>>>>>> fabcf1d (added homepage,dashboard)

@@ -7,17 +7,37 @@ export const useExecutionStore = create((set) => ({
     submission: null,
 
     excuteCode: async (source_code, language_id, stdin, expected_outputs, problemId) => {
+<<<<<<< HEAD
+           
+        try {
+            set({ isExecuting: true });
+             console.log("Submission : ", JSON.stringify({
+                source_code,
+                language_id,
+                stdin,
+                expected_outputs,
+                problemId
+             }))
+=======
 
         try {
             set({ isExecuting: true });
             set({ submission: null });
+>>>>>>> fabcf1d (added homepage,dashboard)
 
             const res = await axiosInstance.post('/execute-code', { source_code, language_id, stdin, expected_outputs, problemId })
 
             set({ submission: res.data.submission });
+<<<<<<< HEAD
+            console.log("RESPONSE Is : ",res)
+            toast.success(res.data.message);
+        } catch (error) {
+ 
+=======
             toast.success(res.data.message);
         } catch (error) {
 
+>>>>>>> fabcf1d (added homepage,dashboard)
             console.log("Error executing code", error);
             toast.error("Error executing code");
         } finally {

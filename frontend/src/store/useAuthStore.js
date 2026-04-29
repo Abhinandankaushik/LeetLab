@@ -12,8 +12,15 @@ export const useAuthStore = create((set) => ({
     set({ isCheckingAuth: true });
     try {
       const res = await axiosInstance.get("/auth/check");
+<<<<<<< HEAD
+      console.log("checkauth response", res.data);
+        
+
+      set({ authUser: res.data.User });
+=======
 
       set({ authUser: res.data.user });
+>>>>>>> fabcf1d (added homepage,dashboard)
     } catch (error) {
       console.log("❌ Error checking auth:", error);
       set({ authUser: null });

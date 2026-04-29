@@ -10,7 +10,13 @@ const AddToPlaylistModal = ({ isOpen, onClose, problemId }) => {
     if (isOpen) {
       getAllPlaylists();
     }
+<<<<<<< HEAD
+  }, [isOpen]);
+
+  console.log("pl",playlists);
+=======
   }, [isOpen, getAllPlaylists]);
+>>>>>>> fabcf1d (added homepage,dashboard)
 
   const handleSubmit = async (e) => {
     e.preventDefault();

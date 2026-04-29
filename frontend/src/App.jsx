@@ -12,6 +12,11 @@ import Layout from './layout/Layout.jsx'
 import AdminRoute from './components/AdminRoute.jsx'
 import AddProblem from './page/AddProblem.jsx'
 import ProblemPage from './page/ProblemPage.jsx'
+<<<<<<< HEAD
+const App = () => {
+
+  const { authUser, checkAuth, isCheckingAuth } = useAuthStore()
+=======
 import UserProfile from './page/UserProfile.jsx'
 import DiscussionPage from './page/DiscussionPage.jsx'
 import LibraryPage from './page/LibraryPage.jsx'
@@ -29,11 +34,18 @@ const App = () => {
 
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore()
   const { initializeTheme } = useThemeStore()
+>>>>>>> fabcf1d (added homepage,dashboard)
 
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
 
+<<<<<<< HEAD
+  if (isCheckingAuth && !authUser) {
+    return (
+      <div className='flex flex-col items-center justify-center h-screen'>
+        <Loader className='h-25 w-25 animate-spin text-blue-500' />
+=======
   useEffect(() => {
     initializeTheme()
   }, [initializeTheme])
@@ -42,17 +54,24 @@ const App = () => {
     return (
       <div className='min-h-screen grid place-items-center bg-base-200'>
         <Loader className='h-14 w-14 animate-spin text-primary' />
+>>>>>>> fabcf1d (added homepage,dashboard)
 
       </div>
     )
   }
   return (
+<<<<<<< HEAD
+    <div className='flex flex-col items-center justify-center '>
+=======
     <div className='min-h-screen w-full bg-base-200 text-base-content'>
+>>>>>>> fabcf1d (added homepage,dashboard)
       <Toaster />
       <Routes>
 
         <Route path='/' element={<Layout />} >
           <Route index element={authUser ? <HomePage /> : <Navigate to={'/login'} />} />
+<<<<<<< HEAD
+=======
           <Route path='problems' element={authUser ? <ProblemsPage /> : <Navigate to={'/login'} />} />
           <Route path='discussion' element={authUser ? <DiscussionPage /> : <Navigate to={'/login'} />} />
           <Route path='library' element={authUser ? <LibraryPage /> : <Navigate to={'/login'} />} />
@@ -62,6 +81,7 @@ const App = () => {
           <Route path='leaderboard' element={authUser ? <LeaderboardPage /> : <Navigate to={'/login'} />} />
           <Route path='dashboard' element={authUser ? <DashboardPage /> : <Navigate to={'/login'} />} />
           <Route path='discussion/thread/:id' element={authUser ? <DiscussionThreadPage /> : <Navigate to={'/login'} />} />
+>>>>>>> fabcf1d (added homepage,dashboard)
         </Route>
 
         <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
@@ -72,6 +92,10 @@ const App = () => {
             path="/add-problem"
             element={authUser ? <AddProblem /> : <Navigate to="/login" />}
           />
+<<<<<<< HEAD
+        </Route>
+        <Route path='/problem/:id' element={authUser ? <ProblemPage /> : <Navigate to="/login" />} />
+=======
           <Route
             path="/problem/:id/edit"
             element={authUser ? <EditProblemPage /> : <Navigate to="/login" />}
@@ -80,6 +104,7 @@ const App = () => {
         <Route path='/problem/:id' element={authUser ? <ProblemPage /> : <Navigate to="/login" />} />
         <Route path='/profile/:id' element={authUser ? <UserProfile /> : <Navigate to="/login" />} />
         <Route path='/submission/:submissionId' element={authUser ? <SubmissionDetailPage /> : <Navigate to="/login" />} />
+>>>>>>> fabcf1d (added homepage,dashboard)
 
       </Routes>
     </div>

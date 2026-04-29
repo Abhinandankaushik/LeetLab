@@ -1,4 +1,7 @@
 @import "tailwindcss";
+<<<<<<< HEAD
+@plugin "daisyui";
+=======
 @plugin "daisyui";
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
@@ -171,3 +174,4 @@ pre,
 	}
 }
 
+>>>>>>> fabcf1d (added homepage,dashboard)

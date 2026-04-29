@@ -1,3 +1,14 @@
+<<<<<<< HEAD
+import React from 'react'
+
+const Submission = () => {
+  return (
+    <div>Submission</div>
+  )
+}
+
+export default Submission
+=======
 import { useExecutionStore } from "../store/useExecutionStore.js";
 
 const Submission = () => {
@@ -121,3 +132,4 @@ const Submission = () => {
 };
 
 export default Submission;
+>>>>>>> fabcf1d (added homepage,dashboard)
