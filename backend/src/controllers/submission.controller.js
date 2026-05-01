@@ -44,17 +44,33 @@ export const getSubmissionByProblemId = async (req, res) => {
                 problemId: problemId
             },
             include: {
-                testCases: true
+                testCases: {
+                    select: {
+                        passed: true
+                    }
+                }
             },
             orderBy: {
                 createdAt: 'desc'
             }
         })
 
+        const formattedSubmissions = submissions.map(sub => ({
+            id: sub.id,
+            problemId: sub.problemId,
+            language: sub.language,
+            status: sub.status,
+            time: sub.time,
+            memory: sub.memory,
+            totalTestcases: sub.testCases.length,
+            passedTestcases: sub.testCases.filter(tc => tc.passed).length,
+            createdAt: sub.createdAt
+        }));
+
         res.status(200).json({
             success: true,
             message: "Submissions fetched successfully",
-            submissions
+            submissions: formattedSubmissions
         })
     } catch (err) {
 
@@ -114,6 +130,7 @@ export const getSubmissionDetailsById = async (req, res) => {
                         defficulty: true,
                         tags: true,
                         description: true,
+                        examples: true, // Need examples to identify public cases
                     },
                 },
             },
@@ -126,10 +143,48 @@ export const getSubmissionDetailsById = async (req, res) => {
             });
         }
 
+        // Helper to normalize strings for comparison (trim every line)
+        const normalize = (s) => String(s ?? "")
+            .replace(/\r\n/g, "\n")
+            .split('\n')
+            .map(line => line.trim())
+            .join('\n')
+            .trim();
+        
+        // Extract example inputs
+        const examples = Array.isArray(submission.problem.examples) 
+            ? submission.problem.examples 
+            : submission.problem.examples ? Object.values(submission.problem.examples) : [];
+        const exampleInputs = new Set(examples.map(ex => normalize(ex.input)));
+
+        // Separate results: Public Examples vs Hidden Cases
+        const publicTestCases = [];
+        let hiddenPassedCount = 0;
+        let hiddenFailedCount = 0;
+
+        submission.testCases.forEach(tc => {
+            const isPublic = exampleInputs.has(normalize(tc.stdin));
+            if (isPublic) {
+                publicTestCases.push(tc);
+            } else {
+                if (tc.passed) {
+                    hiddenPassedCount++;
+                } else {
+                    hiddenFailedCount++;
+                }
+            }
+        });
+
         res.status(200).json({
             success: true,
             message: "Submission fetched successfully",
-            submission,
+            submission: {
+                ...submission,
+                testCases: publicTestCases,
+                hiddenPassedCount,
+                hiddenFailedCount,
+                totalHiddenCases: hiddenPassedCount + hiddenFailedCount
+            },
         });
     } catch (err) {
         res.status(500).json({

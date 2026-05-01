@@ -1,4 +1,4 @@
-import { submitBatch, pollBatchResults, getLanguageName } from "../libs/judge0.lib.js";
+import { submitBatch, pollBatchResults, getLanguageName, runSubmissions } from "../libs/judge0.lib.js";
 import { db } from "../libs/db.js"
 import { updateUserActivity, updateUserStreak } from "../libs/activity.lib.js";
 
@@ -65,62 +65,54 @@ export const excutecode = async (req, res) => {
             }
         }
 
-        //validate test cases
+        // 2. Prepare test cases (fetch from DB to prevent leaking secrets to frontend)
+        let testcasesToRun = [];
 
-        if (
-            !Array.isArray(stdin) ||
-            stdin.length === 0 ||
-            !Array.isArray(expected_outputs) ||
-            expected_outputs.length !== stdin.length ||
-            stdin.length > 25
-        ) {
-            return res.status(400).json({
-                success: false,
-                error: "Invalid test cases"
-            });
+        if (isSubmit || (!stdin && !expected_outputs)) {
+            // Use hidden test cases from DB for submission or full run
+            testcasesToRun = problem.testcases.map(t => ({
+
+                input: t.input,
+                expectedOutput: t.output
+            }));
+
+        } else {
+            // Use custom test cases provided by user for "Run"
+            testcasesToRun = stdin.map((input, index) => ({
+                input,
+                expectedOutput: expected_outputs[index]
+            }));
         }
 
-        //2. prepare each test cases for judge0 batch submission
+        console.log(`🚀 Executing ${testcasesToRun.length} test cases for problem: ${problem.title}`);
+        testcasesToRun.forEach((tc, i) => {
+            console.log(`   [TC ${i + 1}] Input: "${tc.input}" | Expected: "${tc.expectedOutput}"`);
+        });
 
-        const submission = stdin.map((input) => ({
+        // 3. Send and Evaluate submissions using the pipeline
+        const result = await runSubmissions({
             source_code: source_code.slice(0, 50000),
             language_id,
-            stdin: input,
-        }));
+            testcases: testcasesToRun
+        });
 
-        //3. Send batch of submission to judge0
-        const submitResponse = await submitBatch(submission);
+        const allPassed = result.status === "Accepted";
 
-        const tokens = submitResponse.map((r) => r.token);
-
-        //4. Poll for results
-        const results = await pollBatchResults(tokens);
-
-        //Analyze test case results
-
-        let allPassed = true;
-        const detailedResults = results.map((result, index) => {
-
-            const stdout = result.stdout?.trim();
-            const expected_output = expected_outputs[index]?.trim();
-            const passed = stdout === expected_output;
-
-            if (!passed) allPassed = false;
-
+        // Map pipeline details back to the controller's format
+        const detailedResults = result.details.map((detail, index) => {
             return {
                 testCase: index + 1,
-                passed,
-                stdout,
-                stdin: stdin[index],
-                expected: expected_output,
-                stderr: result.stderr || null,
-                compileOutput: result.compile_output || null,
-                status: result.status.description,
-                memory: result.memory ? `${result.memory} KB` : undefined,
-                time: result.time ? `${result.time} s` : undefined,
-            }
-
-        })
+                passed: detail.status === "Passed",
+                stdout: detail.output,
+                stdin: detail.input,
+                expected: detail.expected,
+                stderr: detail.stderr || null,
+                compileOutput: detail.compileOutput || null,
+                status: detail.judgeStatus.description,
+                memory: detail.memory ? `${detail.memory} KB` : undefined,
+                time: detail.time ? `${detail.time} s` : undefined,
+            };
+        });
 
         if (!isSubmit) {
             // If just "Run", don't save to DB, just return results
@@ -142,7 +134,7 @@ export const excutecode = async (req, res) => {
                 problemId,
                 sourceCode: { code: source_code }, // Wrap in object for Prisma JSON
                 language: getLanguageName(language_id),
-                stdin: stdin.join("\n"),
+                stdin: testcasesToRun.map(t => t.input).join("\n"),
                 stdout: JSON.stringify(detailedResults.map((r) => r.stdout)),
                 stderr: detailedResults.some((r) => r.stderr) ? JSON.stringify(detailedResults.map((r) => r.stderr)) : null,
                 compileOutput: detailedResults.some((r) => r.compileOutput) ? JSON.stringify(detailedResults.map((r) => r.compileOutput)) : null,
@@ -165,7 +157,7 @@ export const excutecode = async (req, res) => {
                     userId, problemId
                 }
             });
-            
+
             // Update streak on successful solve
             await updateUserStreak(userId);
         }
@@ -204,10 +196,65 @@ export const excutecode = async (req, res) => {
         })
 
 
+        const totalCount = testcasesToRun.length;
+        const passedCount = detailedResults.filter(r => r.passed).length;
+
+        // Helper to normalize strings for comparison (trim every line)
+        const normalize = (s) => String(s ?? "")
+            .replace(/\r\n/g, "\n")
+            .split('\n')
+            .map(line => line.trim())
+            .join('\n')
+            .trim();
+        
+        // Extract example inputs to identify public cases
+        const examples = Array.isArray(problem.examples) 
+            ? problem.examples 
+            : problem.examples ? Object.values(problem.examples) : [];
+        const exampleInputs = new Set(examples.map(ex => normalize(ex.input)));
+
+        // Sanitize results: separate public detailed and hidden summary
+        const publicTestCases = [];
+        let hiddenPassedCount = 0;
+        let hiddenFailedCount = 0;
+
+        detailedResults.forEach((res, idx) => {
+            const normalizedStdin = normalize(res.stdin);
+            const isPublic = exampleInputs.has(normalizedStdin);
+            
+            console.log(`[DEBUG] TC ${idx+1} | Stdin: "${normalizedStdin}" | isPublic: ${isPublic}`);
+            if (!isPublic) {
+                console.log(`        Example Inputs in Set:`, Array.from(exampleInputs));
+            }
+
+            if (isPublic) {
+                publicTestCases.push(res);
+            } else {
+                if (res.passed) {
+                    hiddenPassedCount++;
+                } else {
+                    hiddenFailedCount++;
+                }
+            }
+        });
+
+        const submissionResponse = submissionWithTestCase || {
+            status: allPassed ? "Accepted" : "Wrong Answer",
+            language: getLanguageName(language_id),
+        };
+
         return res.status(200).json({
             success: true,
-            message: "code submitted successfully",
-            submission: submissionWithTestCase,
+            message: isSubmit ? "code submitted successfully" : "code executed successfully",
+            submission: {
+                ...submissionResponse,
+                testCases: publicTestCases,
+                hiddenPassedCount,
+                hiddenFailedCount,
+                totalHiddenCases: hiddenPassedCount + hiddenFailedCount
+            },
+            passedCount,
+            totalCount
         })
 
     } catch (err) {

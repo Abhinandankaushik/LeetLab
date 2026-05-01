@@ -9,30 +9,30 @@ import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { DifficultyBadge } from "@/components/difficulty-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AICodePanel } from "@/components/ai-code-panel";
 import { EditorToolbar } from "@/components/EditorToolbar";
-import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Send, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Bookmark } from "lucide-react";
-import { AddToPlaylistDialog } from "@/components/PlaylistDialogs";
-import * as Resizable from "react-resizable-panels";
 
-const formatStat = (val: string | null | undefined) => {
-  if (!val) return null;
+// Helper to format statistics (time, memory) that might be stored as JSON strings
+const formatStat = (val: string | null) => {
+  if (!val) return "n/a";
   try {
     const parsed = JSON.parse(val);
-    if (Array.isArray(parsed)) {
-      // Return the first non-null value
-      return parsed.find(v => v !== null && v !== undefined) || parsed[0];
-    }
-    return val;
+    return Array.isArray(parsed) ? parsed[0] : val;
   } catch {
     return val;
   }
 };
+import { AddToPlaylistDialog } from "@/components/PlaylistDialogs";
+import * as Resizable from "react-resizable-panels";
+
+
 
 export default function ProblemDetail() {
   const { 
@@ -182,9 +182,14 @@ export default function ProblemDetail() {
     setRunning(true); 
     setResult(null);
     try {
-      const tcs: any[] = Array.isArray(problem.testcases) ? problem.testcases : [];
-      const stdins = tcs.map((t) => String(t.input ?? ""));
-      const expected = tcs.map((t) => String(t.output ?? ""));
+      // If submitting, don't send test cases (backend fetches hidden ones)
+      // If running, send examples as test cases
+      const examples: any[] = Array.isArray(problem.examples) 
+        ? problem.examples 
+        : (problem.examples ? Object.values(problem.examples) : []);
+        
+      const stdins = !isSubmit ? examples.map((t) => String(t.input ?? "")) : undefined;
+      const expected = !isSubmit ? examples.map((t) => String(t.output ?? "")) : undefined;
       
       const res: any = await executeApi.run({
         source_code: code,
@@ -192,7 +197,7 @@ export default function ProblemDetail() {
         stdin: stdins,
         expected_outputs: expected,
         problemId: problem.id,
-        isSubmit: isSubmit // Flag to backend to save or not
+        isSubmit: isSubmit
       });
       
       const sub: Submission = res.submission || res.data || res;
@@ -370,13 +375,18 @@ export default function ProblemDetail() {
                         return (
                           <div 
                             key={s.id} 
-                            onClick={() => {
-                              setResult(s);
-                              // Auto-open console if it was closed
-                              if (!result && !running) {
-                                setConsoleHeight(40);
+                            onClick={async () => {
+                              try {
+                                const { submission: fullSub } = await submissionsApi.get(s.id);
+                                setResult(fullSub);
+                                // Auto-open console if it was closed
+                                if (consoleHeight < 15) {
+                                  setConsoleHeight(40);
+                                }
+                                toast.info(`Viewing submission from ${new Date(s.createdAt!).toLocaleTimeString()}`);
+                              } catch (err: any) {
+                                toast.error("Failed to load submission details");
                               }
-                              toast.info(`Viewing submission from ${new Date(s.createdAt!).toLocaleTimeString()}`);
                             }}
                             className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border bg-card p-3 text-sm hover:border-primary/30 transition-colors cursor-pointer group gap-3"
                           >
@@ -454,33 +464,131 @@ export default function ProblemDetail() {
             }}
           />
 
-          <div className="flex-1 relative overflow-hidden group">
-            <Editor
-              height="100%"
-              language={lang.monaco}
-              theme={editorSettings.theme}
-              value={code}
-              onChange={(v) => setCode(v ?? "")}
-              options={{
-                fontFamily: editorSettings.fontFamily,
-                fontSize: editorSettings.fontSize,
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                padding: { top: 16 },
-                automaticLayout: true,
-                cursorSmoothCaretAnimation: "on",
-                smoothScrolling: true,
-                lineNumbersMinChars: 4,
-                bracketPairColorization: { enabled: true },
-                guides: { indentation: true },
-                suggestOnTriggerCharacters: true,
-                quickSuggestions: { other: true, comments: true, strings: true }
-              }}
-            />
-            <div className="absolute right-4 bottom-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-2 py-1 rounded backdrop-blur-sm border border-border/40">
-                {lang.name} · {code.length} chars
-              </span>
+          <div className="flex-1 relative overflow-hidden group/editor flex flex-col">
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent z-10" />
+            <div className="flex-1 relative">
+              <Editor
+                key={editorSettings.theme}
+                height="100%"
+                language={lang.monaco}
+                theme={editorSettings.theme}
+                value={code}
+                onChange={(v) => setCode(v ?? "")}
+                beforeMount={(monaco) => {
+                  // Oceanic Blue
+                  monaco.editor.defineTheme('oceanic', {
+                    base: 'vs-dark',
+                    inherit: true,
+                    rules: [{ token: '', foreground: 'd4d4d4', background: '1b2b34' }],
+                    colors: {
+                      'editor.background': '#1b2b34',
+                      'editor.foreground': '#d4d4d4',
+                      'editorLineNumber.foreground': '#4f5b66',
+                      'editor.selectionBackground': '#4f5b6650',
+                      'editor.lineHighlightBackground': '#24343d',
+                      'editorCursor.foreground': '#6699cc'
+                    }
+                  });
+
+                  // Monokai
+                  monaco.editor.defineTheme('monokai', {
+                    base: 'vs-dark',
+                    inherit: true,
+                    rules: [
+                      { token: 'comment', foreground: '75715e' },
+                      { token: 'keyword', foreground: 'f92672' },
+                      { token: 'string', foreground: 'e6db74' }
+                    ],
+                    colors: {
+                      'editor.background': '#272822',
+                      'editor.foreground': '#f8f8f2',
+                      'editorLineNumber.foreground': '#90908a',
+                      'editor.selectionBackground': '#49483e',
+                      'editor.lineHighlightBackground': '#3e3d32',
+                      'editorCursor.foreground': '#f8f8f0'
+                    }
+                  });
+
+                  // Cyberpunk Neon
+                  monaco.editor.defineTheme('cyberpunk', {
+                    base: 'vs-dark',
+                    inherit: true,
+                    rules: [
+                      { token: 'keyword', foreground: 'ff00ff', fontStyle: 'bold' },
+                      { token: 'string', foreground: '00ffff' },
+                      { token: 'comment', foreground: '32cd32', fontStyle: 'italic' }
+                    ],
+                    colors: {
+                      'editor.background': '#10002b',
+                      'editor.foreground': '#ffffff',
+                      'editorLineNumber.foreground': '#7b2cbf',
+                      'editor.selectionBackground': '#5a189a',
+                      'editor.lineHighlightBackground': '#240046',
+                      'editorCursor.foreground': '#ff00ff'
+                    }
+                  });
+
+                  // One Dark
+                  monaco.editor.defineTheme('one-dark', {
+                    base: 'vs-dark',
+                    inherit: true,
+                    rules: [
+                      { token: 'keyword', foreground: 'c678dd' },
+                      { token: 'string', foreground: '98c379' },
+                      { token: 'identifier', foreground: '61afef' }
+                    ],
+                    colors: {
+                      'editor.background': '#282c34',
+                      'editor.foreground': '#abb2bf',
+                      'editorLineNumber.foreground': '#4b5263',
+                      'editor.selectionBackground': '#3e4451',
+                      'editor.lineHighlightBackground': '#2c313c',
+                      'editorCursor.foreground': '#528bff'
+                    }
+                  });
+                }}
+                onMount={(editor, monaco) => {
+                   // No-op or extra setup if needed
+                }}
+                options={{
+                  fontFamily: editorSettings.fontFamily,
+                  fontSize: editorSettings.fontSize,
+                  lineHeight: 1.6, // More breathing room
+                  letterSpacing: 0.5,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  padding: { top: 20, bottom: 20 },
+                  automaticLayout: true,
+                  cursorSmoothCaretAnimation: "on",
+                  cursorBlinking: "smooth", // Modern smooth blink
+                  cursorStyle: "line",
+                  smoothScrolling: true,
+                  lineNumbersMinChars: 4,
+                  bracketPairColorization: { enabled: true },
+                  guides: { 
+                    indentation: true,
+                    bracketPairs: true 
+                  },
+                  renderLineHighlight: "all", // Highlight whole line
+                  renderWhitespace: "none",
+                  suggestOnTriggerCharacters: true,
+                  quickSuggestions: { other: true, comments: true, strings: true },
+                  scrollbar: {
+                    verticalScrollbarSize: 8,
+                    horizontalScrollbarSize: 8,
+                  },
+                  fontLigatures: true,
+                }}
+              />
+              {/* Floating Language Indicator */}
+              <div className="absolute right-6 bottom-6 opacity-0 group-hover/editor:opacity-100 transition-all duration-500 translate-y-2 group-hover/editor:translate-y-0 pointer-events-none z-10">
+                <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-xl border border-primary/20 shadow-2xl glow-primary-sm">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-[10px] font-bold font-mono text-foreground uppercase tracking-widest">
+                    {lang.name}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -537,11 +645,18 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
   const tcs = sub.testCases || [];
   const passed = tcs.filter((t) => t.passed).length;
   
-  // Extract example inputs to identify which test cases are "public"
   const examples = Array.isArray(problem.examples) 
     ? problem.examples 
     : problem.examples ? Object.values(problem.examples) : [];
-  const exampleInputs = new Set(examples.map(ex => String((ex as any).input ?? "").trim()));
+  const normalize = (s: any) => String(s ?? "")
+    .replace(/\r\n/g, "\n")
+    .split('\n')
+    .map(line => line.trim())
+    .join('\n')
+    .trim();
+  const exampleInputs = new Set(examples.map(ex => normalize((ex as any).input)));
+
+
 
   return (
     <div className="mt-3 space-y-6">
@@ -560,11 +675,19 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
             </div>
             <div>
               <h3 className={cn("text-lg font-bold tracking-tight", ok ? "text-easy" : "text-hard")}>
-                {sub.status}
+                {sub.status || "Finished"}
               </h3>
-              <p className="text-xs text-muted-foreground font-mono">
-                {passed} / {tcs.length} testcases passed
-              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  {passed} / {tcs.length} Passed
+                </p>
+                <div className="flex h-1.5 w-24 bg-muted rounded-full overflow-hidden border border-border/20">
+                  <div 
+                    className={cn("h-full transition-all duration-1000", ok ? "bg-easy shadow-[0_0_8px_rgba(var(--easy),0.5)]" : "bg-hard shadow-[0_0_8px_rgba(var(--hard),0.5)]")} 
+                    style={{ width: `${(passed / (tcs.length || 1)) * 100}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex flex-col items-end gap-1 font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
@@ -573,7 +696,7 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
               {sub.time && <span className="bg-muted px-2 py-0.5 rounded border border-border/40 text-foreground">{formatStat(sub.time)}</span>}
               {sub.memory && <span className="bg-muted px-2 py-0.5 rounded border border-border/40 text-foreground">{formatStat(sub.memory)}</span>}
             </div>
-            <span>{new Date().toLocaleTimeString()}</span>
+            <span>{sub.createdAt ? new Date(sub.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString()}</span>
           </div>
         </div>
 
@@ -591,13 +714,12 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
       {/* Detailed Test Cases */}
       <div className="space-y-4">
         <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/40 pb-2">Test Case Analysis</h4>
-        {tcs.map((t, idx) => {
-          // Identify if this is a public example
-          const isPublic = exampleInputs.has(String(t.stdin ?? "").trim());
-          
-          return (
+        
+        <div className="grid gap-3">
+          {/* 1. Public Examples */}
+          {tcs.filter(t => exampleInputs.has(normalize(t.stdin))).map((t, idx) => (
             <div key={t.id || idx} className={cn(
-              "rounded-xl border bg-card transition-all overflow-hidden",
+              "rounded-xl border bg-card transition-all overflow-hidden shadow-sm hover:shadow-md",
               t.passed ? "border-easy/20" : "border-hard/20"
             )}>
               <div className={cn(
@@ -605,7 +727,7 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
                 t.passed ? "bg-easy/5 border-easy/10" : "bg-hard/5 border-hard/10"
               )}>
                 <span className="font-mono text-[10px] font-bold uppercase tracking-tighter">
-                  Testcase #{t.testCase} {isPublic ? "(Public)" : "(Hidden)"}
+                  Example Case #{idx + 1}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono text-muted-foreground">{t.time}</span>
@@ -613,57 +735,102 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
                 </div>
               </div>
 
-              {/* Only show details for Public test cases or if explicitly allowed */}
-              {isPublic ? (
-                <div className="p-4 space-y-3 font-mono text-xs">
+              <div className="p-4 space-y-3 font-mono text-xs">
+                <div>
+                  <span className="text-muted-foreground text-[10px] uppercase block mb-1">Input</span>
+                  <code className="block bg-muted/40 p-2 rounded border border-border/40 whitespace-pre-wrap">
+                    {t.stdin || "n/a"}
+                  </code>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-muted-foreground text-[10px] uppercase block mb-1">Input</span>
-                    <code className="block bg-muted/40 p-2 rounded border border-border/40 whitespace-pre-wrap">
-                      {t.stdin || "n/a"}
+                    <span className="text-muted-foreground text-[10px] uppercase block mb-1">Expected</span>
+                    <code className="block bg-muted/40 p-2 rounded border border-border/40 text-easy/80">
+                      {t.expected}
                     </code>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-muted-foreground text-[10px] uppercase block mb-1">Expected</span>
-                      <code className="block bg-muted/40 p-2 rounded border border-border/40 text-easy/80">
-                        {t.expected}
-                      </code>
+                  <div>
+                    <span className="text-muted-foreground text-[10px] uppercase block mb-1">Actual Output</span>
+                    <code className={cn(
+                      "block p-2 rounded border",
+                      t.passed ? "bg-easy/5 border-easy/20 text-easy" : "bg-hard/5 border-hard/20 text-hard"
+                    )}>
+                      {t.stdout || (t.status?.includes("Time") ? "TLE" : "no output")}
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* 2. Hidden Cases Summary */}
+          {(() => {
+            const hPassed = sub.hiddenPassedCount || 0;
+            const hFailed = sub.hiddenFailedCount || 0;
+            const totalH = sub.totalHiddenCases || (hPassed + hFailed);
+            
+            if (totalH === 0) return null;
+
+            const hOk = hFailed === 0;
+
+            return (
+              <div className={cn(
+                "rounded-xl border p-5 transition-all shadow-sm",
+                hOk ? "bg-easy/5 border-easy/20 shadow-[0_0_15px_-5px_rgba(var(--easy),0.1)]" : "bg-hard/5 border-hard/20 shadow-[0_0_15px_-5px_rgba(var(--hard),0.1)]"
+              )}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "p-3 rounded-2xl shadow-inner",
+                      hOk ? "bg-easy/10 text-easy" : "bg-hard/10 text-hard"
+                    )}>
+                      <ShieldAlert className="h-5 w-5" />
                     </div>
                     <div>
-                      <span className="text-muted-foreground text-[10px] uppercase block mb-1">Actual Output</span>
-                      <code className={cn(
-                        "block p-2 rounded border",
-                        t.passed ? "bg-easy/5 border-easy/20 text-easy" : "bg-hard/5 border-hard/20 text-hard"
-                      )}>
-                        {t.stdout || (t.status?.includes("Time") ? "TLE" : "no output")}
-                      </code>
+                      <h4 className="text-sm font-black uppercase tracking-tight">Hidden Test Cases</h4>
+                      <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
+                        {hOk ? "All private test cases passed." : "Some private test cases failed."}
+                      </p>
                     </div>
                   </div>
-                  {t.stderr && (
-                    <div>
-                      <span className="text-hard text-[10px] uppercase block mb-1">Stderr</span>
-                      <code className="block bg-hard/5 p-2 rounded border border-hard/20 text-hard/80">
-                        {t.stderr}
-                      </code>
+                  <div className="text-right">
+                    <div className={cn("text-xl font-black font-mono leading-none", hOk ? "text-easy" : "text-hard")}>
+                      {hPassed} / {totalH}
                     </div>
-                  )}
+                    <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mt-1">
+                      Hidden Passed
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="p-4 flex items-center justify-center bg-muted/5 italic text-xs text-muted-foreground">
-                  Details hidden for private test case
+                
+                <div className="mt-5 h-2 w-full bg-muted/50 rounded-full overflow-hidden border border-border/10">
+                  <div 
+                    className={cn("h-full transition-all duration-1000", hOk ? "bg-easy shadow-[0_0_10px_rgba(var(--easy),0.4)]" : "bg-hard shadow-[0_0_10px_rgba(var(--hard),0.4)]")} 
+                    style={{ width: `${(hPassed / totalH) * 100}%` }}
+                  />
                 </div>
-              )}
-            </div>
-          );
-        })}
+              </div>
+            );
+          })()}
+        </div>
       </div>
     </div>
   );
 }
+
 function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId: string, discussions: DiscussPost[], setDiscussions: any }) {
   const { user } = useAuth();
   const [content, setContent] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  // Auto-expand logic
+  React.useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  }, [content]);
 
   const handlePost = async () => {
     if (!user) { toast.error("Sign in to post"); return; }
@@ -678,6 +845,7 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
       });
       setDiscussions([res.discussion, ...discussions]);
       setContent("");
+      if (textareaRef.current) textareaRef.current.style.height = "38px";
       toast.success("Message posted");
     } catch (err: any) {
       toast.error(err.message || "Failed to post");
@@ -702,9 +870,9 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
   };
 
   return (
-    <div className="flex flex-col h-[500px] border rounded-xl overflow-hidden bg-muted/5">
+    <div className="flex flex-col h-[400px] border rounded-xl overflow-hidden bg-muted/5 mb-8 shadow-inner">
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-        {discussions.length === 0 && <p className="text-center text-muted-foreground text-xs py-10">No discussions yet. Start the conversation!</p>}
+        {discussions.length === 0 && <p className="text-center text-muted-foreground text-xs py-10 italic">No discussions yet. Start the conversation!</p>}
         {discussions.map((d) => (
           <div key={d.id} className={cn(
             "flex flex-col max-w-[85%] group animate-in slide-in-from-bottom-2",
@@ -743,15 +911,22 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
           </div>
         ))}
       </div>
-      <div className="p-3 border-t bg-card flex gap-2">
-        <Input 
+      <div className="p-3 border-t bg-card/90 backdrop-blur-sm flex items-end gap-2 shrink-0">
+        <Textarea 
+          ref={textareaRef}
           placeholder="Type your message..." 
           value={content} 
           onChange={(e) => setContent(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handlePost()}
-          className="h-9 text-xs"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handlePost();
+            }
+          }}
+          className="min-h-[38px] max-h-[200px] py-2 text-xs bg-background/50 focus-visible:ring-primary/30 resize-none overflow-y-auto scrollbar-thin transition-[height] duration-100"
+          rows={1}
         />
-        <Button size="sm" className="h-9 px-3" onClick={handlePost} disabled={isSubmitting}>
+        <Button size="sm" className="h-9 px-3 glow-primary shrink-0 mb-[1px]" onClick={handlePost} disabled={isSubmitting}>
           {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>

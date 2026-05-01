@@ -1,5 +1,5 @@
 import { db } from "../libs/db.js"
-import { getJudge0LanguageId, submitBatch, pollBatchResults } from "../libs/judge0.lib.js"
+import { getJudge0LanguageId, submitBatch, pollBatchResults, runSubmissions } from "../libs/judge0.lib.js"
 
 const validateProblem = async (referenceSolutions, testcases) => {
     const langsToValidate = Object.keys(referenceSolutions || {});
@@ -16,24 +16,17 @@ const validateProblem = async (referenceSolutions, testcases) => {
             throw new Error(`Language ${language} is not supported`);
         }
 
-        const submissions = testcases.map(({ input, output }) => ({
+        const result = await runSubmissions({
             source_code: solutionCode,
             language_id: languageId,
-            stdin: input,
-            expected_output: output,
-        }));
+            testcases: testcases.map(t => ({ input: t.input, expectedOutput: t.output }))
+        });
 
-        const submissionResults = await submitBatch(submissions);
-        const tokens = submissionResults.map((res) => res.token);
-        const results = await pollBatchResults(tokens);
-
-        for (let i = 0; i < results.length; i++) {
-            const result = results[i];
-            if (result.status.id !== 3) {
-                const error = new Error(`Validation failed for language ${language}: ${result.status.description}`);
-                error.details = result.compile_output || result.stderr;
-                throw error;
-            }
+        if (result.status !== "Accepted") {
+            const errorDetail = result.details.find(d => d.compileOutput || d.stderr);
+            const error = new Error(`Validation failed for language ${language}: ${result.status}`);
+            error.details = errorDetail?.compileOutput || errorDetail?.stderr || result.status;
+            throw error;
         }
     }
 };
@@ -112,15 +105,30 @@ export const getAllProblem = async (req, res) => {
             where.visibility = 'PUBLIC';
         }
 
-        const allProblem = await db.problem.findMany({
+        const problems = await db.problem.findMany({
             where,
-            include: include.solvedBy ? { solvedBy: include.solvedBy } : {}
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                tags: true,
+                defficulty: true,
+                visibility: true,
+                solvedBy: include.solvedBy ? {
+                    where: include.solvedBy.where,
+                    select: {
+                        id: true,
+                        userId: true,
+                        problemId: true
+                    }
+                } : false
+            }
         });
 
         res.status(200).json({
             success: true,
             message: "All Problems Fetched Successfully",
-            problems: allProblem
+            problems: problems
         });
 
     } catch (err) {
@@ -181,10 +189,26 @@ export const getProblemById = async (req, res) => {
             }
         }
 
+        // Define fields to return (excluding testcases and referenceSolutions)
+        const problemData = {
+            id: problem.id,
+            title: problem.title,
+            description: problem.description,
+            tags: problem.tags,
+            defficulty: problem.defficulty,
+            visibility: problem.visibility,
+            constraints: problem.constraints,
+            hints: problem.hints,
+            editorial: problem.editorial,
+            examples: problem.examples,
+            codeSnippets: problem.codeSnippets,
+            contestProblems: problem.contestProblems
+        };
+
         res.status(200).json({
             success: true,
             message: "Problem Fetched Successfully",
-            problem
+            problem: problemData
         });
 
     } catch (err) {
@@ -309,7 +333,7 @@ export const deleteProblem = async (req, res) => {
 
 export const getSolvedProblemByUser = async (req, res) => {
     try {
-        const problem = await db.problem.findMany({
+        const problems = await db.problem.findMany({
             where: {
                 solvedBy: {
                     some: {
@@ -317,10 +341,18 @@ export const getSolvedProblemByUser = async (req, res) => {
                     }
                 }
             },
-            include: {
+            select: {
+                id: true,
+                title: true,
+                defficulty: true,
+                tags: true,
                 solvedBy: {
                     where: {
                         userId: req.user.id
+                    },
+                    select: {
+                        id: true,
+                        createdAt: true
                     }
                 }
             }
@@ -329,7 +361,7 @@ export const getSolvedProblemByUser = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Solved problems fetched successfully",
-            problems: problem
+            problems: problems
         });
 
     } catch (err) {

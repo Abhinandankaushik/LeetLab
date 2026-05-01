@@ -70,7 +70,9 @@ export function EditorToolbar({
   };
 
   return (
-    <div className="flex items-center justify-between border-b border-border bg-muted/30 px-3 py-1.5 backdrop-blur-md">
+    <div className="flex items-center justify-between border-b border-primary/10 bg-background/40 px-3 py-2 backdrop-blur-xl sticky top-0 z-30 shadow-sm">
+      <div className="absolute inset-x-0 bottom-[-1px] h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      
       <div className="flex items-center gap-3">
         {/* Lang Selector */}
         <DropdownMenu>
@@ -150,6 +152,10 @@ export function EditorToolbar({
             <DropdownMenuRadioGroup value={settings.theme} onValueChange={(v) => onSettingsChange({ ...settings, theme: v })}>
               <DropdownMenuRadioItem value="vs-dark">Dark (VS Code)</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="light">Light</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="oceanic">Oceanic Blue</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="monokai">Monokai</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="cyberpunk">Cyberpunk Neon</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="one-dark">One Dark</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="hc-black">High Contrast</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
@@ -166,22 +172,22 @@ export function EditorToolbar({
 
         <div className="h-4 w-px bg-border/60 mx-0.5 sm:mx-1" />
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <Button 
             size="sm" 
-            variant="secondary" 
+            variant="ghost" 
             onClick={onRun} 
             disabled={running}
-            className="h-8 px-3 sm:px-4 bg-muted/60 hover:bg-muted font-semibold text-xs"
+            className="h-8 px-3 sm:px-4 hover:bg-primary/10 font-bold text-xs transition-all active:scale-95"
           >
-            <Play className="h-3 w-3 sm:mr-1.5" />
+            <Play className="h-3 w-3 sm:mr-1.5 fill-current" />
             <span className="hidden sm:inline">Run</span>
           </Button>
           <Button 
             size="sm" 
             onClick={onSubmit} 
             disabled={running}
-            className="h-8 px-3 sm:px-4 glow-primary-sm btn-shine font-bold text-xs"
+            className="h-8 px-4 sm:px-5 glow-primary btn-shine font-black text-xs transition-all active:scale-95 rounded-lg shadow-[0_0_15px_-3px_rgba(var(--primary),0.4)]"
           >
             <Code2 className="h-3 w-3 sm:mr-1.5" />
             <span className="hidden sm:inline">Submit</span>

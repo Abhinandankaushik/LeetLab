@@ -213,6 +213,7 @@ export const submissionsApi = {
     api.get<{ submissions: Submission[] }>(`/submissions/get-submissions/${problemId}`),
   countByProblem: (problemId: string) =>
     api.get<{ count: number }>(`/submissions/get-submissions-count/${problemId}`),
+  get: (id: string) => api.get<{ submission: Submission }>(`/submissions/get-submission/${id}`),
 };
 
 export const playlistsApi = {
