@@ -89,7 +89,7 @@ export interface Submission {
   id: string;
   userId: string;
   problemId: string;
-  sourceCode: any;
+  sourceCode: { code: string };
   language: string;
   stdin?: string | null;
   stdout?: string | null;
@@ -99,12 +99,14 @@ export interface Submission {
   time?: string | null;
   createdAt: string;
   testCases?: TestCaseResult[];
+  problem?: Problem;
 }
 
 export interface TestCaseResult {
-  id: string;
+  id?: string;
   testCase: number;
   passed: boolean;
+  stdin?: string | null;
   stdout?: string | null;
   expected: string;
   stderr?: string | null;
@@ -145,11 +147,11 @@ export interface DiscussPost {
   type?: string;
   tags: string[];
   upvotes: number;
-  votes?: number;
+  downvotes: number;
   views?: number;
   isPinned?: boolean;
   problemId?: string;
-  user?: { id: string; name: string; rating?: number; image?: string | null };
+  user?: { id: string; name: string; username?: string; rating?: number; image?: string | null };
   author?: { id: string; name: string; rating?: number };
   createdAt: string;
   commentCount?: number;

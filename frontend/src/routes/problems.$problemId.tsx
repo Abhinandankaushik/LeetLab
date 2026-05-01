@@ -20,6 +20,20 @@ import { Bookmark } from "lucide-react";
 import { AddToPlaylistDialog } from "@/components/PlaylistDialogs";
 import * as Resizable from "react-resizable-panels";
 
+const formatStat = (val: string | null | undefined) => {
+  if (!val) return null;
+  try {
+    const parsed = JSON.parse(val);
+    if (Array.isArray(parsed)) {
+      // Return the first non-null value
+      return parsed.find(v => v !== null && v !== undefined) || parsed[0];
+    }
+    return val;
+  } catch {
+    return val;
+  }
+};
+
 export default function ProblemDetail() {
   const { 
     PanelResizeHandle: ResizableHandle, 
@@ -357,8 +371,11 @@ export default function ProblemDetail() {
                               <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground uppercase">{s.language}</span>
                             </div>
                             <div className="flex items-center gap-3 font-mono text-[10px] text-muted-foreground">
-                              {s.time && <span>{s.time}</span>}
-                              {s.memory && <span>{s.memory}</span>}
+                              {s.time && <span>{formatStat(s.time)}</span>}
+                              {s.memory && <span>{formatStat(s.memory)}</span>}
+                              <span className="text-[9px] bg-muted/40 px-1.5 py-0.5 rounded">
+                                {new Date(s.createdAt).toLocaleDateString()} {new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
                               <span className="opacity-0 group-hover:opacity-100 transition-opacity text-primary font-bold">VIEW →</span>
                             </div>
                           </div>
@@ -530,8 +547,8 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
           <div className="flex flex-col items-end gap-1 font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
             <div className="flex items-center gap-2">
               <span className="bg-muted px-2 py-0.5 rounded border border-border/40 text-foreground">{sub.language}</span>
-              {sub.time && <span className="bg-muted px-2 py-0.5 rounded border border-border/40 text-foreground">{sub.time}</span>}
-              {sub.memory && <span className="bg-muted px-2 py-0.5 rounded border border-border/40 text-foreground">{sub.memory}</span>}
+              {sub.time && <span className="bg-muted px-2 py-0.5 rounded border border-border/40 text-foreground">{formatStat(sub.time)}</span>}
+              {sub.memory && <span className="bg-muted px-2 py-0.5 rounded border border-border/40 text-foreground">{formatStat(sub.memory)}</span>}
             </div>
             <span>{new Date().toLocaleTimeString()}</span>
           </div>

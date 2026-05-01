@@ -16,36 +16,51 @@ export const getJudge0LanguageId = (language) => {
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+const decode = (str) => (str ? Buffer.from(str, "base64").toString("utf-8") : str);
+const encode = (str) => (str ? Buffer.from(str).toString("base64") : str);
 
 export const pollBatchResults = async (tokens) => {
     while (true) {
-
         const { data } = await axios.get(`${process.env.JUDGE0_API_URL}/submissions/batch`, {
             params: {
                 tokens: tokens.join(","),
-                base64_encoded: false,
+                base64_encoded: true,
             }
-        })
+        });
 
         const results = data.submissions;
 
         const isAllDone = results.every(
             (r) => r.status.id !== 1 && r.status.id !== 2
-        )
+        );
 
-        if (isAllDone) return results
-        await sleep(1000)
+        if (isAllDone) {
+            return results.map(r => ({
+                ...r,
+                stdout: decode(r.stdout),
+                stderr: decode(r.stderr),
+                compile_output: decode(r.compile_output),
+                message: decode(r.message)
+            }));
+        }
+        await sleep(1000);
     }
 }
 
 export const submitBatch = async (submissions) => {
-    const { data } = await axios.post(`${process.env.JUDGE0_API_URL}/submissions/batch?base64_encoded=false`, {
-        submissions
-    })
+    const encodedSubmissions = submissions.map(s => ({
+        ...s,
+        source_code: encode(s.source_code),
+        stdin: encode(s.stdin),
+        expected_output: encode(s.expected_output)
+    }));
 
-    console.log("Submission Results: ", data)
+    const { data } = await axios.post(`${process.env.JUDGE0_API_URL}/submissions/batch?base64_encoded=true`, {
+        submissions: encodedSubmissions
+    });
 
-    return data // [{token} , {token} , {token}]
+    console.log("Submission Results: ", data);
+    return data; // [{token} , {token} , {token}]
 }
 
 export const getLanguageName = (language_id) => {

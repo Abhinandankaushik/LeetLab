@@ -24,8 +24,8 @@ export const getAllSubmission = async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: "Internal Server Error while getting all submission",
-            error: err,
+            message: "Internal Server Error",
+            error: err.message,
         })
 
     }
@@ -60,8 +60,8 @@ export const getSubmissionByProblemId = async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: "Internal Server Error while getting submission by problem id",
-            error: err,
+            message: "Internal Server Error",
+            error: err.message,
         })
     }
 }
@@ -87,8 +87,8 @@ export const getSubmissionCountByProblemId = async (req, res) => {
 
         res.status(500).json({
             success: false,
-            message: "Internal Server Error while getting submission count by problem id",
-            error: err,
+            message: "Internal Server Error",
+            error: err.message,
         })
 
     }
@@ -134,8 +134,8 @@ export const getSubmissionDetailsById = async (req, res) => {
     } catch (err) {
         res.status(500).json({
             success: false,
-            message: "Internal Server Error while getting submission details",
-            error: err,
+            message: "Internal Server Error",
+            error: err.message,
         });
     }
 }
