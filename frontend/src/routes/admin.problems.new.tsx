@@ -40,7 +40,7 @@ export default function NewProblemPage() {
         </Link>
       </div>
       
-      <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur-xl p-8 md:p-12 shadow-2xl">
+      <div className="rounded-2xl border border-border/50 bg-card/30 backdrop-blur-xl p-4 sm:p-8 md:p-12 shadow-2xl">
         <CreateProblemForm />
       </div>
     </div>

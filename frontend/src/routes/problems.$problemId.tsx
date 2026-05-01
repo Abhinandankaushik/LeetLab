@@ -67,8 +67,17 @@ export default function ProblemDetail() {
   const [isDragging, setIsDragging] = React.useState(false);
   const [consoleHeight, setConsoleHeight] = React.useState(40);
   const [isResizingConsole, setIsResizingConsole] = React.useState(false);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isMobile) return;
     setIsDragging(true);
   };
 
@@ -239,28 +248,34 @@ export default function ProblemDetail() {
       "flex flex-col bg-background",
       isFullscreen ? "fixed inset-0 z-50 h-screen w-screen" : "min-h-[calc(100vh-3.5rem)] h-[calc(100vh-3.5rem)]"
     )}>
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className={cn(
+        "flex-1 flex relative",
+        isMobile ? "flex-col overflow-y-auto overflow-x-hidden" : "flex-row overflow-hidden"
+      )}>
         {/* Left: description - Hidden in Fullscreen */}
         {!isFullscreen && (
           <>
             <div 
               className={cn(
-                "bg-background border-r border-border h-full overflow-y-auto scrollbar-thin",
-                !isDragging && "transition-all duration-300"
+                "bg-background shrink-0",
+                !isDragging && "transition-all duration-300",
+                isMobile ? "w-full border-b border-border" : "border-r border-border h-full overflow-y-auto scrollbar-thin"
               )}
-              style={{ width: `${100 - editorSettings.editorWidth}%` }}
+              style={isMobile ? {} : { width: `${100 - editorSettings.editorWidth}%` }}
             >
-              <div className="p-6">
+              <div className={cn("p-4 md:p-6")}>
                 <Link to="/problems" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                   <ArrowLeft className="h-3 w-3" /> All problems
                 </Link>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <h1 className="font-display text-2xl font-bold tracking-tight">{problem.title}</h1>
-                  <DifficultyBadge value={problem.defficulty} />
+                <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight">{problem.title}</h1>
+                    <DifficultyBadge value={problem.defficulty} />
+                  </div>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="ml-auto flex items-center gap-2 h-8"
+                    className="flex items-center gap-2 h-8 w-fit shrink-0"
                     onClick={() => setIsPlaylistOpen(true)}
                   >
                     <Bookmark className="h-4 w-4" /> Save
@@ -273,13 +288,13 @@ export default function ProblemDetail() {
                 </div>
 
                 <Tabs defaultValue="desc" className="mt-6">
-                  <TabsList className="w-full justify-start h-9 bg-muted/40 p-0.5">
-                    <TabsTrigger value="desc" className="text-xs">Description</TabsTrigger>
-                    <TabsTrigger value="examples" className="text-xs">Examples</TabsTrigger>
-                    <TabsTrigger value="hints" className="text-xs">Hints</TabsTrigger>
-                    <TabsTrigger value="ai" className="text-xs">AI</TabsTrigger>
-                    <TabsTrigger value="subs" className="text-xs">Submissions</TabsTrigger>
-                    <TabsTrigger value="discuss" className="text-xs">Discuss</TabsTrigger>
+                  <TabsList className="w-full justify-start h-10 bg-muted/20 p-1 overflow-x-auto overflow-y-hidden scrollbar-none flex-nowrap shrink-0">
+                    <TabsTrigger value="desc" className="text-[11px] md:text-xs min-w-fit">Description</TabsTrigger>
+                    <TabsTrigger value="examples" className="text-[11px] md:text-xs min-w-fit">Examples</TabsTrigger>
+                    <TabsTrigger value="hints" className="text-[11px] md:text-xs min-w-fit">Hints</TabsTrigger>
+                    <TabsTrigger value="ai" className="text-[11px] md:text-xs min-w-fit">AI</TabsTrigger>
+                    <TabsTrigger value="subs" className="text-[11px] md:text-xs min-w-fit">Submissions</TabsTrigger>
+                    <TabsTrigger value="discuss" className="text-[11px] md:text-xs min-w-fit">Discuss</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="ai" className="mt-4 animate-in fade-in duration-300">
@@ -363,20 +378,24 @@ export default function ProblemDetail() {
                               }
                               toast.info(`Viewing submission from ${new Date(s.createdAt!).toLocaleTimeString()}`);
                             }}
-                            className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm hover:border-primary/30 transition-colors cursor-pointer group"
+                            className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border bg-card p-3 text-sm hover:border-primary/30 transition-colors cursor-pointer group gap-3"
                           >
-                            <div className="flex items-center gap-2">
-                              {ok ? <CheckCircle2 className="h-4 w-4 text-easy" /> : <XCircle className="h-4 w-4 text-hard" />}
-                              <span className={cn("font-medium", ok ? "text-easy" : "text-hard")}>{s.status}</span>
-                              <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground uppercase">{s.language}</span>
+                            <div className="flex items-center justify-between sm:justify-start gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {ok ? <CheckCircle2 className="h-4 w-4 text-easy shrink-0" /> : <XCircle className="h-4 w-4 text-hard shrink-0" />}
+                                <span className={cn("font-bold truncate", ok ? "text-easy" : "text-hard")}>{s.status}</span>
+                              </div>
+                              <span className="font-mono text-[9px] md:text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground uppercase shrink-0">{s.language}</span>
                             </div>
-                            <div className="flex items-center gap-3 font-mono text-[10px] text-muted-foreground">
-                              {s.time && <span>{formatStat(s.time)}</span>}
-                              {s.memory && <span>{formatStat(s.memory)}</span>}
-                              <span className="text-[9px] bg-muted/40 px-1.5 py-0.5 rounded">
-                                {new Date(s.createdAt).toLocaleDateString()} {new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-primary font-bold">VIEW →</span>
+                            <div className="flex items-center justify-between sm:justify-end gap-3 font-mono text-[10px] text-muted-foreground border-t sm:border-0 pt-2 sm:pt-0">
+                              <div className="flex items-center gap-3">
+                                {s.time && <span className="hidden xs:inline">{formatStat(s.time)}</span>}
+                                {s.memory && <span className="hidden xs:inline">{formatStat(s.memory)}</span>}
+                                <span className="text-[9px] bg-muted/40 px-1.5 py-0.5 rounded whitespace-nowrap">
+                                  {new Date(s.createdAt).toLocaleDateString()} {new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-primary font-bold text-[9px] sm:text-[10px] shrink-0">VIEW →</span>
                             </div>
                           </div>
                         );
@@ -394,20 +413,24 @@ export default function ProblemDetail() {
               </div>
             </div>
             {/* Drag Handle */}
-            <div 
-              onMouseDown={handleMouseDown}
-              className="w-1.5 h-full cursor-col-resize hover:bg-primary/40 transition-colors bg-border/40 z-10"
-            />
+            {/* Drag Handle - Desktop Only */}
+            {!isMobile && (
+              <div 
+                onMouseDown={handleMouseDown}
+                className="w-1.5 h-full cursor-col-resize hover:bg-primary/40 transition-colors bg-border/40 z-10"
+              />
+            )}
           </>
         )}
 
         {/* Right: editor + result */}
         <div 
           className={cn(
-            "flex flex-col bg-card overflow-hidden h-full",
-            !isDragging && "transition-all duration-300"
+            "flex flex-col bg-card shrink-0",
+            !isDragging && "transition-all duration-300",
+            isMobile ? "w-full min-h-screen" : "h-full overflow-hidden"
           )}
-          style={{ width: isFullscreen ? "100%" : `${editorSettings.editorWidth}%` }}
+          style={isMobile ? {} : { width: isFullscreen ? "100%" : `${editorSettings.editorWidth}%` }}
         >
           <EditorToolbar 
             onRun={() => handleRun(false)}

@@ -228,23 +228,23 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
 
   return (
     <div className="space-y-8 pb-20">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="font-display text-3xl font-bold flex items-center gap-2">
+          <h1 className="font-display text-2xl md:text-3xl font-bold flex items-center gap-2">
             <FileCode className="h-8 w-8 text-primary" /> 
             {problemId ? "Edit Problem" : location.state?.aiGeneratedProblem ? "Review AI Problem" : "Create Problem"}
           </h1>
-          <p className="text-muted-foreground">Define your challenge or import a bulk JSON payload.</p>
+          <p className="text-muted-foreground text-sm">Define your challenge or import a bulk JSON payload.</p>
         </div>
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={() => setShowJsonMode(!showJsonMode)}>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => setShowJsonMode(!showJsonMode)} className="flex-1 sm:flex-none">
             <Upload className="h-4 w-4 mr-2" />
-            {showJsonMode ? "Switch to Form" : "Bulk JSON Import"}
+            {showJsonMode ? "Form" : "Bulk JSON"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => navigate("/admin")}>Cancel</Button>
-          <Button onClick={() => onSubmit(watch())} disabled={isLoading} className="btn-shine">
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate("/admin")} className="flex-1 sm:flex-none">Cancel</Button>
+          <Button onClick={() => onSubmit(watch())} size="sm" disabled={isLoading} className="btn-shine flex-1 sm:flex-none">
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-            Save Problem
+            Save
           </Button>
         </div>
       </div>
@@ -278,7 +278,7 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-6 lg:grid-cols-3 animate-in fade-in">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <section className="rounded-xl border border-border bg-card p-6 space-y-4 shadow-sm">
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4 shadow-sm">
               <h2 className="font-display text-xl font-bold flex items-center gap-2">
                 <Layout className="h-5 w-5 text-primary" /> Core Details
               </h2>
@@ -331,7 +331,7 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
               </div>
             </section>
 
-            <section className="rounded-xl border border-border bg-card p-6 space-y-4 shadow-sm">
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-xl font-bold flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-primary" /> Logic & Languages
@@ -354,14 +354,14 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
                 </Button>
               </div>
               
-              <div className="flex gap-1 overflow-x-auto pb-2 border-b border-border/40">
+              <div className="flex gap-1 overflow-x-auto scrollbar-none pb-2 border-b border-border/40">
                 {availableLangs.map((lang) => (
                   <button
                     key={lang}
                     type="button"
                     onClick={() => setActiveLang(lang)}
                     className={cn(
-                      "px-4 py-1.5 text-xs font-mono uppercase tracking-widest rounded-md transition-all border shrink-0",
+                      "px-4 py-2 text-[10px] md:text-xs font-mono uppercase tracking-widest rounded-md transition-all border shrink-0",
                       activeLang === lang 
                         ? "bg-primary text-primary-foreground border-primary" 
                         : "border-transparent text-muted-foreground hover:bg-muted"
@@ -437,7 +437,7 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <section className="rounded-xl border border-border bg-card p-6 space-y-4 shadow-sm">
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4 shadow-sm">
               <h2 className="font-display text-lg font-bold flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" /> Tags
               </h2>
@@ -456,7 +456,7 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
               </div>
             </section>
 
-            <section className="rounded-xl border border-border bg-card p-6 space-y-4 shadow-sm">
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <h2 className="font-display text-lg font-bold flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-primary" /> Testcases
@@ -465,10 +465,10 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
               </div>
               <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin">
                 {testCaseFields.map((field, index) => (
-                  <div key={field.id} className="p-4 rounded-md border border-border space-y-3 relative group bg-muted/20">
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button type="button" onClick={() => removeTestCase(index)} className="text-destructive hover:text-destructive/80">
-                        <Trash2 className="h-3 w-3" />
+                  <div key={field.id} className="p-3 sm:p-4 rounded-md border border-border space-y-3 relative group bg-muted/20">
+                    <div className="absolute top-2 right-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button type="button" onClick={() => removeTestCase(index)} className="p-1 text-destructive hover:bg-destructive/10 rounded-md transition-colors">
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                     <div className="space-y-1">
@@ -497,7 +497,7 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
               </div>
             </section>
 
-            <section className="rounded-xl border border-border bg-card p-6 space-y-4 shadow-sm">
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4 shadow-sm">
               <h2 className="font-display text-lg font-bold flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-primary" /> Resources
               </h2>

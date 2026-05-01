@@ -94,11 +94,11 @@ export function ActivityHeatmap({ data, year }: Props) {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto scrollbar-thin pb-2">
         <svg
           width={weeks.length * (cellSize + cellGap) + 30}
           height={7 * (cellSize + cellGap) + 24}
-          className="block"
+          className="block min-w-full"
         >
           {/* Month labels */}
           {weeks.map((week, wi) => {

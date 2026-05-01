@@ -48,10 +48,10 @@ export default function DiscussPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div>
           <p className="font-mono text-xs uppercase tracking-widest text-primary">/ discuss</p>
-          <h1 className="mt-2 font-display text-4xl font-bold">Community brain trust</h1>
+          <h1 className="mt-2 font-display text-3xl md:text-4xl font-bold">Community brain trust</h1>
           <p className="mt-2 max-w-xl text-sm text-muted-foreground">
             Ask, answer, share editorials, and learn from interview experiences.
           </p>
@@ -59,24 +59,26 @@ export default function DiscussPage() {
         <NewPostDialog onPostCreated={() => refetch()} />
       </div>
 
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[240px]">
+      <div className="mb-6 flex flex-col lg:flex-row lg:items-center gap-4">
+        <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search discussions..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+          <Input placeholder="Search discussions..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9 h-11" />
         </div>
-        <div className="flex flex-wrap items-center gap-1 rounded-md border border-border bg-card p-1">
-          {TYPES.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setType(t.key)}
-              className={cn(
-                "rounded px-3 py-1 text-xs font-semibold transition-colors",
-                type === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="flex overflow-x-auto scrollbar-none pb-1">
+          <div className="flex items-center gap-1 rounded-md border border-border bg-card p-1 shrink-0">
+            {TYPES.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setType(t.key)}
+                className={cn(
+                  "rounded px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all shrink-0",
+                  type === t.key ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -195,7 +197,7 @@ function NewPostDialog({ onPostCreated }: { onPostCreated: () => void }) {
               className="font-display text-lg"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Type</label>
               <Select value={type} onValueChange={setType}>

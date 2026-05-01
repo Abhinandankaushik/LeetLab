@@ -64,8 +64,8 @@ export default function AdminAIProblemPage() {
         <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-gradient-primary text-primary-foreground glow-primary animate-float">
           <BrainCircuit className="h-8 w-8" />
         </div>
-        <h1 className="font-display text-4xl font-bold tracking-tight">AI Problem Architect</h1>
-        <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
+        <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight px-2">AI Problem Architect</h1>
+        <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-lg mx-auto px-4">
           Just name the challenge. Our AI will draft the description, constraints, 
           multi-language starter code, and test cases for you.
         </p>
@@ -78,30 +78,30 @@ export default function AdminAIProblemPage() {
           <div className="space-y-6">
             <div className="space-y-2">
               <label className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Problem Title</label>
-              <div className="relative group">
-                <Input 
-                  value={problemName}
-                  onChange={(e) => setProblemName(e.target.value)}
-                  placeholder="e.g. Find the Median of Two Sorted Arrays"
-                  className="h-16 pl-6 pr-32 text-xl font-medium bg-muted/20 border-border/60 focus:border-primary transition-all"
-                  disabled={isGenerating}
-                />
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                   <Button 
-                    type="submit" 
-                    disabled={isGenerating || !problemName.trim()}
-                    className="h-12 px-6 glow-primary btn-shine"
-                  >
-                    {isGenerating ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Generate
-                      </>
-                    )}
-                  </Button>
+              <div className="flex flex-col gap-3">
+                <div className="relative flex-1">
+                  <Input 
+                    value={problemName}
+                    onChange={(e) => setProblemName(e.target.value)}
+                    placeholder="e.g. Find the Median of Two Sorted Arrays"
+                    className="h-14 md:h-16 px-6 text-base md:text-xl font-medium bg-muted/20 border-border/60 focus:border-primary transition-all"
+                    disabled={isGenerating}
+                  />
                 </div>
+                <Button 
+                  type="submit" 
+                  disabled={isGenerating || !problemName.trim()}
+                  className="h-12 md:h-14 px-8 glow-primary btn-shine w-full sm:w-auto self-center sm:self-end"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate Problem
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
 

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Maximize2, Minimize2, Play, Pause, RotateCcw, Settings, Type, Palette, Layout } from "lucide-react";
+import { Maximize2, Minimize2, Play, Pause, RotateCcw, Settings, Type, Palette, Layout, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -91,9 +91,9 @@ export function EditorToolbar({
 
         <div className="h-4 w-px bg-border/60" />
 
-        {/* Timer */}
+        {/* Timer - Hidden on very small screens */}
         <div className={cn(
-          "flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[11px] transition-all",
+          "hidden md:flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[11px] transition-all shrink-0",
           isActive ? "border-primary/50 bg-primary/5 text-primary glow-primary-sm" : "border-border/40 bg-muted/40 text-muted-foreground"
         )}>
           <span className={cn(isActive && "animate-pulse")}>{formatTime(seconds)}</span>
@@ -164,25 +164,29 @@ export function EditorToolbar({
           {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </Button>
 
-        <div className="h-4 w-px bg-border/60 mx-1" />
+        <div className="h-4 w-px bg-border/60 mx-0.5 sm:mx-1" />
 
-        <Button 
-          size="sm" 
-          variant="secondary" 
-          onClick={onRun} 
-          disabled={running}
-          className="h-8 bg-muted/60 hover:bg-muted font-semibold"
-        >
-          Run
-        </Button>
-        <Button 
-          size="sm" 
-          onClick={onSubmit} 
-          disabled={running}
-          className="h-8 glow-primary-sm btn-shine font-bold"
-        >
-          Submit
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button 
+            size="sm" 
+            variant="secondary" 
+            onClick={onRun} 
+            disabled={running}
+            className="h-8 px-3 sm:px-4 bg-muted/60 hover:bg-muted font-semibold text-xs"
+          >
+            <Play className="h-3 w-3 sm:mr-1.5" />
+            <span className="hidden sm:inline">Run</span>
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={onSubmit} 
+            disabled={running}
+            className="h-8 px-3 sm:px-4 glow-primary-sm btn-shine font-bold text-xs"
+          >
+            <Code2 className="h-3 w-3 sm:mr-1.5" />
+            <span className="hidden sm:inline">Submit</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

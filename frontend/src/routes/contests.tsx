@@ -31,20 +31,22 @@ export default function ContestsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 inline-flex items-center gap-1 rounded-md border border-border bg-card p-1">
-        {(["upcoming", "live", "ended"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={cn(
-              "rounded px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors",
-              tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t === "live" && <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-hard" />}
-            {t}
-          </button>
-        ))}
+      <div className="mb-8 flex overflow-x-auto scrollbar-none pb-1">
+        <div className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-1 shrink-0">
+          {(["upcoming", "live", "ended"] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={cn(
+                "rounded px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all shrink-0",
+                tab === t ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+              )}
+            >
+              {t === "live" && <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-hard" />}
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading && <CardGridSkeleton count={6} />}

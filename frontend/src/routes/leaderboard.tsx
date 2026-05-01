@@ -42,10 +42,10 @@ export default function LeaderboardPage() {
 
       {/* Podium */}
       {entries.length >= 3 && (
-        <div className="mb-12 grid gap-6 sm:grid-cols-3">
-          <PodiumCard place={2} entry={entries[1]} />
-          <PodiumCard place={1} entry={entries[0]} />
-          <PodiumCard place={3} entry={entries[2]} />
+        <div className="mb-12 grid gap-4 sm:grid-cols-3">
+          <div className="order-2 sm:order-1"><PodiumCard place={2} entry={entries[1]} /></div>
+          <div className="order-1 sm:order-2 scale-105 sm:scale-110 z-10"><PodiumCard place={1} entry={entries[0]} /></div>
+          <div className="order-3 sm:order-3"><PodiumCard place={3} entry={entries[2]} /></div>
         </div>
       )}
 
@@ -61,34 +61,34 @@ export default function LeaderboardPage() {
 
       {entries.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xl transition-all">
-          <div className="relative w-full overflow-auto">
-            <div className="min-w-[800px]">
-              <div className="grid grid-cols-[80px_1fr_120px_120px_120px] gap-4 border-b border-border bg-muted/30 px-6 py-4 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          <div className="relative w-full">
+            <div className="min-w-full">
+              <div className="grid grid-cols-[60px_1fr_80px] md:grid-cols-[80px_1fr_120px_120px_120px] gap-4 border-b border-border bg-muted/30 px-6 py-4 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 <span>Rank</span>
                 <span>Contestant</span>
                 <span className="text-right">Rating</span>
-                <span className="text-right">Solved</span>
-                <span className="text-right">Contests</span>
+                <span className="hidden md:block text-right">Solved</span>
+                <span className="hidden md:block text-right">Contests</span>
               </div>
               {entries.map((e) => (
                 <Link
                   key={e.user.id}
                   to={`/u/${e.user.username || e.user.id}`}
-                  className="grid grid-cols-[80px_1fr_120px_120px_120px] items-center gap-4 border-b border-border/40 px-6 py-4 last:border-0 hover:bg-muted/30 transition-colors"
+                  className="grid grid-cols-[60px_1fr_80px] md:grid-cols-[80px_1fr_120px_120px_120px] items-center gap-4 border-b border-border/40 px-6 py-4 last:border-0 hover:bg-muted/30 transition-colors"
                 >
                   <RankBadge rank={e.rank} />
                   <div className="flex items-center gap-3">
-                    <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-[11px] font-bold uppercase text-primary border border-primary/20">
+                    <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-[11px] font-bold uppercase text-primary border border-primary/20 shrink-0">
                       {e.user.name.slice(0, 2)}
                     </div>
                     <div className="min-w-0">
-                      <div className="truncate font-display font-bold">{e.user.name}</div>
+                      <div className="truncate font-display font-bold text-sm md:text-base">{e.user.name}</div>
                       {e.user.country && <div className="font-mono text-[10px] text-muted-foreground">{e.user.country}</div>}
                     </div>
                   </div>
-                  <span className={cn("text-right font-mono font-bold text-lg", ratingColor(e.rating))}>{e.rating}</span>
-                  <span className="text-right font-mono text-sm text-muted-foreground">{e.solved}</span>
-                  <span className="text-right font-mono text-sm text-muted-foreground">{e.contests}</span>
+                  <span className={cn("text-right font-mono font-bold text-base md:text-lg", ratingColor(e.rating))}>{e.rating}</span>
+                  <span className="hidden md:block text-right font-mono text-sm text-muted-foreground">{e.solved}</span>
+                  <span className="hidden md:block text-right font-mono text-sm text-muted-foreground">{e.contests}</span>
                 </Link>
               ))}
             </div>

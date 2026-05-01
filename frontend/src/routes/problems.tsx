@@ -74,7 +74,7 @@ export default function ProblemsPage() {
           <p className="font-mono text-xs uppercase tracking-widest text-primary">/ problemset</p>
           <h1 className="mt-2 font-display text-4xl font-bold">Choose your battle</h1>
         </div>
-        <div className="flex flex-wrap gap-3 font-mono text-xs">
+        <div className="flex flex-wrap gap-2 font-mono text-[10px]">
           <Stat label="total" value={counts.total} />
           <Stat label="easy" value={counts.easy} accent="text-easy" />
           <Stat label="medium" value={counts.medium} accent="text-medium" />
@@ -105,12 +105,12 @@ export default function ProblemsPage() {
       </div>
 
       {tags.length > 0 && (
-        <div className="mb-6 flex flex-wrap items-center gap-2">
-          <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+        <div className="mb-6 flex flex-wrap items-center gap-2 max-h-24 overflow-y-auto scrollbar-thin pb-2">
+          <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           <button
             onClick={() => setTag(null)}
             className={cn(
-              "rounded-full border px-2.5 py-0.5 text-xs",
+              "rounded-full border px-2.5 py-0.5 text-[10px]",
               !tag ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground",
             )}
           >
@@ -121,7 +121,7 @@ export default function ProblemsPage() {
               key={t}
               onClick={() => setTag(t === tag ? null : t)}
               className={cn(
-                "rounded-full border px-2.5 py-0.5 text-xs",
+                "rounded-full border px-2.5 py-0.5 text-[10px]",
                 tag === t ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground",
               )}
             >
@@ -144,9 +144,9 @@ export default function ProblemsPage() {
 
       {filtered.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xl transition-all">
-          <div className="relative w-full overflow-auto">
-            <div className="min-w-[700px]">
-          <div className="hidden grid-cols-[40px_1fr_120px_1fr_100px] gap-4 border-b border-border bg-muted/30 px-4 py-3 font-mono text-xs uppercase tracking-wider text-muted-foreground md:grid">
+          <div className="relative w-full overflow-hidden">
+            <div className="min-w-full">
+          <div className="hidden md:grid grid-cols-[40px_1fr_120px_1fr_100px] gap-4 border-b border-border bg-muted/30 px-4 py-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
             <span></span><span>Title</span><span>Difficulty</span><span>Tags</span><span className="text-right">Status</span>
           </div>
           {filtered.map((p, i) => {
@@ -157,10 +157,18 @@ export default function ProblemsPage() {
                 to={`/problems/${p.id}`}
                 className="grid grid-cols-[40px_1fr_auto] items-center gap-4 border-b border-border/60 px-4 py-3 transition-colors last:border-0 hover:bg-muted/40 md:grid-cols-[40px_1fr_120px_1fr_100px]"
               >
-                <span className="font-mono text-xs text-muted-foreground">{String(i + 1).padStart(3, "0")}</span>
-                <span className="truncate font-medium">{p.title}</span>
+                <span className="font-mono text-[10px] text-muted-foreground">{String(i + 1).padStart(3, "0")}</span>
+                <div className="min-w-0">
+                  <div className="truncate font-medium text-sm md:text-base">{p.title}</div>
+                  <div className="md:hidden mt-1 flex items-center gap-2">
+                    <DifficultyBadge value={p.defficulty} />
+                    {p.tags?.slice(0, 2).map((t) => (
+                      <span key={t} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground">{t}</span>
+                    ))}
+                  </div>
+                </div>
                 <span className="hidden md:block"><DifficultyBadge value={p.defficulty} /></span>
-                <span className="hidden flex-wrap gap-1 md:flex">
+                <span className="hidden md:flex flex-wrap gap-1">
                   {p.tags?.slice(0, 3).map((t) => (
                     <span key={t} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">{t}</span>
                   ))}

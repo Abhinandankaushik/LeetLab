@@ -105,27 +105,31 @@ export default function ProfilePage() {
       </div>
 
       {/* Top stats */}
-      <div className="mt-6 grid gap-4 md:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Trophy} label="solved" value={solved.length} accent />
         <StatCard icon={Code2} label="submissions" value={subs.length} />
         <StatCard icon={Activity} label="accepted" value={accepted} />
         <StatCard icon={Flame} label="streak" value={user.currentStreak ?? 0} />
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Tier label="Easy" count={counts.easy} color="text-easy" />
         <Tier label="Medium" count={counts.medium} color="text-medium" />
         <Tier label="Hard" count={counts.hard} color="text-hard" />
       </div>
 
       {/* Heatmap + Monthly */}
-      <div className="mt-6 grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <ActivityHeatmap data={heatmapData} />
-        <MonthlyStreak
-          data={heatmapData}
-          currentStreak={activity?.currentStreak ?? user.currentStreak ?? 0}
-          longestStreak={activity?.maxStreak ?? user.longestStreak ?? 0}
-        />
+      <div className="mt-8 flex flex-col lg:flex-row gap-6">
+        <div className="flex-1 min-w-0">
+          <ActivityHeatmap data={heatmapData} />
+        </div>
+        <div className="w-full lg:w-80 shrink-0 mx-auto max-w-sm lg:max-w-none">
+          <MonthlyStreak
+            data={heatmapData}
+            currentStreak={activity?.currentStreak ?? user.currentStreak ?? 0}
+            longestStreak={activity?.maxStreak ?? user.longestStreak ?? 0}
+          />
+        </div>
       </div>
 
       {/* Topics + Skills */}
@@ -138,14 +142,14 @@ export default function ProfilePage() {
       </div>
 
       {/* Solved list */}
-      <h2 className="mt-12 font-display text-2xl font-bold">Recently solved</h2>
-      <div className="mt-8 overflow-hidden rounded-xl border border-border bg-card">
-        <div className="relative w-full overflow-auto">
-          <div className="min-w-[700px]">
+      <h2 className="mt-12 font-display text-2xl font-bold px-1">Recently solved</h2>
+      <div className="mt-6 overflow-hidden rounded-xl border border-border bg-card">
+        <div className="relative w-full overflow-x-auto">
+          <div className="min-w-full">
             {solved.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">Nothing yet — let's fix that.</div>}
             {solved.slice(0, 12).map((p) => (
-              <Link key={p.id} to={`/problems/${p.id}`} className="flex items-center justify-between border-b border-border/60 px-4 py-3 last:border-0 hover:bg-muted/40 hover:translate-x-1 transition-all">
-                <span className="font-medium">{p.title}</span>
+              <Link key={p.id} to={`/problems/${p.id}`} className="flex items-center justify-between border-b border-border/60 px-4 py-3.5 last:border-0 hover:bg-muted/40 hover:translate-x-1 transition-all">
+                <span className="font-medium text-sm md:text-base truncate pr-4">{p.title}</span>
                 <DifficultyBadge value={p.defficulty} />
               </Link>
             ))}

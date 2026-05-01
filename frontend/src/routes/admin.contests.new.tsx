@@ -88,14 +88,14 @@ export default function NewContestPage() {
         </Link>
       </div>
 
-      <div className="mb-10 flex items-center justify-between">
+      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="font-display text-4xl font-bold flex items-center gap-2">
-            <Trophy className="h-8 w-8 text-primary" /> Create New Contest
+          <h1 className="font-display text-3xl md:text-4xl font-bold flex items-center gap-2">
+            <Trophy className="h-7 w-7 md:h-8 md:w-8 text-primary" /> Create New Contest
           </h1>
-          <p className="mt-1 text-muted-foreground">Schedule a competitive arena for the community.</p>
+          <p className="mt-1 text-sm md:text-base text-muted-foreground">Schedule a competitive arena for the community.</p>
         </div>
-        <Button onClick={handleSubmit} disabled={isLoading} className="glow-primary btn-shine h-12 px-8">
+        <Button onClick={handleSubmit} disabled={isLoading} className="glow-primary btn-shine h-12 px-8 w-full md:w-auto">
           {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
           Launch Contest
         </Button>
@@ -103,7 +103,7 @@ export default function NewContestPage() {
 
       <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         {/* Left Col: Contest Details */}
-        <section className="rounded-2xl border border-border bg-card p-8 space-y-6 shadow-sm">
+        <section className="rounded-2xl border border-border bg-card p-5 md:p-8 space-y-6 shadow-sm h-fit">
           <h2 className="font-display text-xl font-bold flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" /> Contest Config
           </h2>
@@ -159,7 +159,7 @@ export default function NewContestPage() {
         </section>
 
         {/* Right Col: Problem Picker */}
-        <section className="flex flex-col rounded-2xl border border-border bg-card shadow-sm overflow-hidden h-[600px]">
+        <section className="flex flex-col rounded-2xl border border-border bg-card shadow-sm overflow-hidden h-[500px] md:h-[600px]">
           <div className="p-6 border-b border-border bg-muted/20">
             <h2 className="font-display text-xl font-bold flex items-center gap-2">
               <Plus className="h-5 w-5 text-primary" /> Problem Selection

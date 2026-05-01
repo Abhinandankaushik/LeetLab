@@ -26,8 +26,8 @@ export default function HomePage() {
       <section className="relative overflow-hidden border-b border-border/60">
         <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl animate-pulse-glow" />
         <div className="absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-accent/10 blur-3xl animate-pulse-glow" style={{ animationDelay: "2s" }} />
-        <div className="mx-auto grid max-w-7xl gap-12 px-4 py-20 lg:grid-cols-[1.2fr_1fr] lg:py-28">
-          <div className="relative">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-16 lg:grid-cols-[1.2fr_1fr] lg:gap-12 lg:py-28">
+          <div className="relative text-center lg:text-left flex flex-col items-center lg:items-start">
             <div className="mb-6 inline-flex animate-fade-in items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 font-mono text-xs text-muted-foreground">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
               v2.0 — contests · discuss · leaderboard live
@@ -37,11 +37,11 @@ export default function HomePage() {
               <span className="block animate-slide-in-left" style={{ animationDelay: "0.18s" }}>compete.</span>
               <span className="block animate-slide-in-left text-gradient-animated" style={{ animationDelay: "0.32s" }}>ascend.</span>
             </h1>
-            <p className="mt-6 max-w-lg animate-fade-in-up text-lg text-muted-foreground" style={{ animationDelay: "0.45s" }}>
+            <p className="mt-6 max-w-lg animate-fade-in-up text-base md:text-lg text-muted-foreground" style={{ animationDelay: "0.45s" }}>
               The competitive programming arena that fuses LeetCode's curation, Codeforces's
               rigor, and HackerRank's breadth — into one focused workspace.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3 animate-fade-in-up" style={{ animationDelay: "0.58s" }}>
+            <div className="mt-8 flex flex-wrap justify-center lg:justify-start gap-3 animate-fade-in-up" style={{ animationDelay: "0.58s" }}>
               <Button asChild size="lg" className="font-semibold glow-primary btn-shine hover-lift">
                 <Link to="/problems">Start solving <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
               </Button>
@@ -50,7 +50,7 @@ export default function HomePage() {
               </Button>
             </div>
 
-            <dl className="mt-12 grid grid-cols-3 gap-6 border-t border-border/60 pt-6 font-mono stagger">
+            <dl className="mt-12 grid grid-cols-2 sm:grid-cols-3 gap-6 border-t border-border/60 pt-6 font-mono stagger w-full">
               <Stat label="problems" value={problemCount > 0 ? `${problemCount}` : "live"} />
               <Stat label="contests" value={contestCount > 0 ? `${contestCount}` : "weekly"} />
               <Stat label="top rating" value={topRating > 0 ? `${topRating}` : "—"} />

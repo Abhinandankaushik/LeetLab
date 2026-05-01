@@ -61,11 +61,11 @@ export function MonthlyStreak({ data, currentStreak = 0, longestStreak = 0 }: Pr
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1 md:gap-1.5">
         {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
           <div
             key={i}
-            className="text-center font-mono text-[10px] text-muted-foreground"
+            className="text-center font-mono text-[9px] md:text-[10px] text-muted-foreground"
           >
             {d}
           </div>
@@ -77,7 +77,7 @@ export function MonthlyStreak({ data, currentStreak = 0, longestStreak = 0 }: Pr
               key={i}
               title={c.date ?? ""}
               className={[
-                "aspect-square rounded-md flex items-center justify-center text-[11px] font-mono transition-all",
+                "aspect-square rounded-md flex items-center justify-center text-[10px] md:text-[11px] font-mono transition-all",
                 c.active
                   ? "bg-primary/80 text-primary-foreground shadow-[0_0_12px_var(--glow)]"
                   : "bg-muted/50 text-muted-foreground",

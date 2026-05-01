@@ -57,32 +57,34 @@ export default function AdminDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 stagger">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="font-display text-4xl font-bold flex items-center gap-2"><Shield className="h-7 w-7 text-primary" /> Admin Dashboard</h1>
+          <h1 className="font-display text-3xl md:text-4xl font-bold flex items-center gap-2">
+            <Shield className="h-7 w-7 text-primary" /> Admin Dashboard
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage users, problems, and contests.</p>
         </div>
-        <div className="flex gap-2">
-          <Link to="/admin/contests/new" className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold hover:bg-muted transition-all hover-lift">
-            <Trophy className="h-3 w-3" /> New Contest
+        <div className="grid grid-cols-2 sm:flex gap-3">
+          <Link to="/admin/contests/new" className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2.5 text-xs md:text-sm font-semibold hover:bg-muted transition-all hover-lift">
+            <Trophy className="h-3.5 w-3.5 md:h-4 md:w-4" /> New Contest
           </Link>
-          <Link to="/admin/problems/new" className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground btn-shine hover-lift">
-            <Sparkles className="h-3 w-3" /> New Problem
+          <Link to="/admin/problems/new" className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-xs md:text-sm font-semibold text-primary-foreground btn-shine hover-lift">
+            <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" /> New Problem
           </Link>
         </div>
       </div>
 
-      <div className="mt-6 flex gap-1 border-b border-border">
+      <div className="mt-8 flex gap-1 border-b border-border overflow-x-auto scrollbar-none pb-px">
         {(["overview", "users", "problems", "contests"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium transition-all border-b-2 -mb-px ${tab === t ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            className={`px-5 py-2.5 text-xs md:text-sm font-bold uppercase tracking-widest transition-all border-b-2 -mb-px shrink-0 ${tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
             {t}
           </button>
         ))}
       </div>
 
       {tab === "overview" && (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Stat icon={Users} label="users" value={liveStats.users} />
           <Stat icon={Code2} label="problems" value={liveStats.problems} />
           <Stat icon={Activity} label="submissions" value={liveStats.submissions} />
@@ -120,19 +122,19 @@ export default function AdminDashboard() {
       )}
 
       {tab === "problems" && (
-        <div className="mt-6 grid gap-3">
+        <div className="mt-6 space-y-3">
           {problems.length === 0 && <div className="p-12 text-center border border-dashed border-border rounded-xl text-muted-foreground">No problems yet.</div>}
           {problems.map((p) => (
-            <div key={p.id} className="flex items-center justify-between rounded-xl border border-border bg-card px-5 py-4 hover-glow transition-all">
-              <div>
-                <Link to={`/problems/${p.id}`} className="font-display font-bold hover:text-primary transition-colors">{p.title}</Link>
-                <div className="mt-1 flex gap-2">
+            <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl border border-border bg-card p-4 md:px-5 md:py-4 hover-glow transition-all gap-4">
+              <div className="min-w-0">
+                <Link to={`/problems/${p.id}`} className="font-display font-bold hover:text-primary transition-colors text-base md:text-lg block truncate">{p.title}</Link>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
                   <span className={`text-[10px] font-bold uppercase tracking-widest ${p.defficulty === "EASY" ? "text-easy" : p.defficulty === "MEDIUM" ? "text-medium" : "text-hard"}`}>{p.defficulty}</span>
                   <span className="text-muted-foreground text-[10px]">·</span>
-                  <div className="font-mono text-[10px] text-muted-foreground">{p.tags?.join(", ")}</div>
+                  <div className="font-mono text-[10px] text-muted-foreground truncate">{p.tags?.join(", ")}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-center">
                 <Button size="icon" variant="ghost" className="h-9 w-9 text-destructive hover:bg-destructive/10" onClick={() => deleteProblem(p.id)}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </div>
