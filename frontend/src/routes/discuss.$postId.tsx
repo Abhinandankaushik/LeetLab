@@ -133,13 +133,6 @@ export default function PostDetail() {
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-slate-200 selection:bg-[#00ff88]/30 selection:text-[#00ff88]">
-      {/* Reading Progress Bar */}
-      <div className="fixed top-0 left-0 w-full h-1 z-[100] bg-[#1a1a2e]">
-        <div 
-          className="h-full bg-[#00ff88] shadow-[0_0_10px_#00ff88] transition-all duration-150" 
-          style={{ width: `${scrollProgress}%` }}
-        />
-      </div>
       <div className="mx-auto max-w-[1400px] px-4 md:px-8 py-10">
         
         {/* 1. Breadcrumb & Actions */}
@@ -195,8 +188,6 @@ export default function PostDetail() {
                          </p>
                          <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground uppercase tracking-widest font-bold">
                             <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                            <span className="opacity-30">•</span>
-                            <span className="text-[#00ff88]/60">6 min read</span>
                          </div>
                       </div>
                    </div>

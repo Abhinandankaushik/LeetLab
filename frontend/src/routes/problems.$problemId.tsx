@@ -167,10 +167,12 @@ export default function ProblemDetail() {
     }).catch(() => { });
   }, [user, problemId, result]);
 
+  const [unifiedDiscussion, setUnifiedDiscussion] = React.useState<any>(null);
+
   React.useEffect(() => {
     if (!problemId) return;
     discussApi.byProblem(problemId).then((res: any) => {
-      setProblemDiscussions(res.discussions || []);
+      setUnifiedDiscussion(res.discussion || null);
     }).catch(() => { });
   }, [problemId]);
 
@@ -439,8 +441,8 @@ export default function ProblemDetail() {
                   <TabsContent value="discuss" className="mt-4 animate-in fade-in duration-300">
                     <DiscussionPanel
                       problemId={problemId!}
-                      discussions={problemDiscussions}
-                      setDiscussions={setProblemDiscussions}
+                      discussion={unifiedDiscussion}
+                      setDiscussion={setUnifiedDiscussion}
                     />
                   </TabsContent>
                 </Tabs>
@@ -868,7 +870,7 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
   );
 }
 
-function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId: string, discussions: DiscussPost[], setDiscussions: any }) {
+function DiscussionPanel({ problemId, discussion, setDiscussion }: { problemId: string, discussion: any, setDiscussion: any }) {
   const { user } = useAuth();
   const [content, setContent] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -882,21 +884,32 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
     }
   }, [content]);
 
+  if (!discussion) {
+    return (
+      <div className="flex flex-col h-[400px] items-center justify-center border rounded-xl bg-muted/5">
+        <Loader2 className="h-6 w-6 animate-spin text-primary opacity-50" />
+      </div>
+    );
+  }
+
+  const messages = discussion.comments || [];
+
   const handlePost = async () => {
     if (!user) { toast.error("Sign in to post"); return; }
     if (!content.trim()) return;
     setIsSubmitting(true);
     try {
-      const res = await discussApi.create({
-        title: "Discussion",
-        content,
-        problemId,
-        type: "problem"
+      // Logic Change: Post a COMMENT to the unified discussion instead of creating a NEW discussion
+      const res = await discussApi.comment(discussion.id, content.trim());
+      
+      setDiscussion({
+        ...discussion,
+        comments: [...messages, res.comment]
       });
-      setDiscussions([res.discussion, ...discussions]);
+
       setContent("");
       if (textareaRef.current) textareaRef.current.style.height = "38px";
-      toast.success("Message posted");
+      toast.success("Message sent");
     } catch (err: any) {
       toast.error(err.message || "Failed to post");
     } finally {
@@ -907,13 +920,17 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
   const handleVote = async (id: string, type: "UPVOTE" | "DOWNVOTE") => {
     if (!user) { toast.error("Sign in to vote"); return; }
     try {
-      const res = await discussApi.vote(id, type);
-      setDiscussions(discussions.map(d => d.id === id ? {
-        ...d,
-        upvotes: res.votes.upvotes,
-        downvotes: res.votes.downvotes,
-        userVote: d.userVote === type ? null : type
-      } : d));
+      // Logic Change: Use voteComment for chat messages (which are now comments)
+      const res = await discussApi.voteComment(id, type);
+      setDiscussion({
+        ...discussion,
+        comments: messages.map((m: any) => m.id === id ? {
+          ...m,
+          upvotes: res.votes.upvotes,
+          downvotes: res.votes.downvotes,
+          userVote: m.userVote === type ? null : type
+        } : m)
+      });
     } catch (err: any) {
       toast.error(err.message || "Failed to vote");
     }
@@ -922,40 +939,40 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
   return (
     <div className="flex flex-col h-[400px] border rounded-xl overflow-hidden bg-muted/5 mb-8 shadow-inner">
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-        {discussions.length === 0 && <p className="text-center text-muted-foreground text-xs py-10 italic">No discussions yet. Start the conversation!</p>}
-        {discussions.map((d) => (
-          <div key={d.id} className={cn(
+        {messages.length === 0 && <p className="text-center text-muted-foreground text-xs py-10 italic">No messages yet. Say hi!</p>}
+        {messages.map((m: any) => (
+          <div key={m.id} className={cn(
             "flex flex-col max-w-[85%] group animate-in slide-in-from-bottom-2",
-            d.user?.id === user?.id ? "ml-auto items-end" : "mr-auto items-start"
+            m.user?.id === user?.id ? "ml-auto items-end" : "mr-auto items-start"
           )}>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-muted-foreground">{d.user?.username || d.user?.name}</span>
-              <span className="text-[9px] text-muted-foreground/60">{new Date(d.createdAt).toLocaleTimeString()}</span>
+              <span className="text-[10px] font-bold text-muted-foreground">{m.user?.username || m.user?.name}</span>
+              <span className="text-[9px] text-muted-foreground/60">{new Date(m.createdAt).toLocaleTimeString()}</span>
             </div>
             <div className={cn(
               "px-3 py-2 rounded-2xl text-sm shadow-sm",
-              d.user?.id === user?.id ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-card border border-border rounded-tl-none"
+              m.user?.id === user?.id ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-card border border-border rounded-tl-none"
             )}>
-              {d.content}
+              {m.content}
             </div>
             <div className="flex items-center gap-3 mt-1 transition-opacity text-muted-foreground/70">
               <button
-                onClick={() => handleVote(d.id, "UPVOTE")}
+                onClick={() => handleVote(m.id, "UPVOTE")}
                 className={cn(
                   "flex items-center gap-1 text-[10px] hover:text-primary transition-colors",
-                  d.userVote === "UPVOTE" && "text-primary font-bold"
+                  m.userVote === "UPVOTE" && "text-primary font-bold"
                 )}
               >
-                <ThumbsUp className="h-3 w-3" /> {d.upvotes}
+                <ThumbsUp className="h-3 w-3" /> {m.upvotes}
               </button>
               <button
-                onClick={() => handleVote(d.id, "DOWNVOTE")}
+                onClick={() => handleVote(m.id, "DOWNVOTE")}
                 className={cn(
                   "flex items-center gap-1 text-[10px] hover:text-hard transition-colors",
-                  d.userVote === "DOWNVOTE" && "text-hard font-bold"
+                  m.userVote === "DOWNVOTE" && "text-hard font-bold"
                 )}
               >
-                <ThumbsDown className="h-3 w-3" /> {d.downvotes}
+                <ThumbsDown className="h-3 w-3" /> {m.downvotes}
               </button>
             </div>
           </div>

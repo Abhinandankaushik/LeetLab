@@ -44,8 +44,10 @@ export const createDiscussion = async (req, res) => {
 export const getProblemDiscussions = async (req, res) => {
     try {
         const { problemId } = req.params;
-        const discussions = await db.discussion.findMany({
-            where: { problemId },
+        
+        // Find or create the unified discussion for this problem
+        let discussion = await db.discussion.findFirst({
+            where: { problemId, type: 'chat' },
             include: {
                 user: {
                     select: {
@@ -55,32 +57,85 @@ export const getProblemDiscussions = async (req, res) => {
                         image: true
                     }
                 },
+                comments: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                username: true,
+                                image: true
+                            }
+                        },
+                        votes: req.user ? {
+                            where: { userId: req.user.id },
+                            select: { type: true }
+                        } : false
+                    },
+                    orderBy: { createdAt: 'asc' }
+                },
                 votes: req.user ? {
                     where: { userId: req.user.id },
                     select: { type: true }
-                } : false,
+                } : undefined,
                 _count: {
                     select: { comments: true }
                 }
-            },
-            orderBy: { createdAt: 'desc' }
+            }
         });
 
-        // Flatten user vote for easier frontend consumption
-        const discussionsWithVote = discussions.map(d => ({
-            ...d,
-            userVote: d.votes?.[0]?.type || null,
-            votes: undefined // Remove the array to save bandwidth
+        if (!discussion) {
+            const problem = await db.problem.findUnique({ where: { id: problemId } });
+            // Fallback user if not logged in
+            let systemUserId = req.user?.id;
+            if (!systemUserId) {
+                const firstUser = await db.user.findFirst();
+                systemUserId = firstUser?.id;
+            }
+
+            if (!systemUserId) {
+                throw new Error("No user found in the system to assign this discussion.");
+            }
+
+            // If no discussion exists, create the "Internal Chat" one
+            discussion = await db.discussion.create({
+                data: {
+                    title: `Internal Chat: ${problem?.title || 'Problem'}`,
+                    content: `System-generated thread for internal problem chat.`,
+                    problemId,
+                    type: 'chat',
+                    userId: systemUserId,
+                    tags: ['internal', 'chat']
+                },
+                include: {
+                    user: { select: { id: true, name: true, username: true, image: true } },
+                    comments: true,
+                    _count: { select: { comments: true } }
+                }
+            });
+        }
+
+        // Map user votes for comments
+        const processedComments = (discussion.comments || []).map(c => ({
+            ...c,
+            userVote: c.votes?.[0]?.type || null,
+            votes: undefined
         }));
 
         res.status(200).json({
             success: true,
-            discussions: discussionsWithVote
+            discussion: {
+                ...discussion,
+                comments: processedComments,
+                userVote: discussion.votes?.[0]?.type || null,
+                votes: undefined
+            }
         });
     } catch (err) {
+        console.error("Problem discussion error:", err);
         res.status(500).json({
             success: false,
-            message: "Internal Server Error while fetching discussions",
+            message: "Internal Server Error while fetching problem discourse",
             error: err.message
         });
     }
@@ -90,10 +145,15 @@ export const getAllDiscussions = async (req, res) => {
     try {
         const { type, q } = req.query;
         
-        const where = {};
+        const where = {
+            NOT: { type: 'chat' } // Hide internal problem chats from public feed
+        };
+
         if (type && type !== 'all') {
             if (type === 'problem') {
                 where.problemId = { not: null };
+                // When filtering by 'problem', we still don't want the raw 'chat' threads
+                // unless explicitly allowed. For now, keep them hidden.
             } else {
                 where.type = {
                     equals: type,
@@ -129,7 +189,7 @@ export const getAllDiscussions = async (req, res) => {
                 votes: req.user ? {
                     where: { userId: req.user.id },
                     select: { type: true }
-                } : false,
+                } : undefined,
                 _count: {
                     select: { comments: true }
                 }
@@ -178,7 +238,7 @@ export const getDiscussionById = async (req, res) => {
                 votes: req.user ? {
                     where: { userId: req.user.id },
                     select: { type: true }
-                } : false,
+                } : undefined,
                 _count: {
                     select: { comments: true }
                 }
