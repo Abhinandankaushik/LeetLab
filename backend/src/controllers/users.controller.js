@@ -105,6 +105,20 @@ const buildProfilePayload = async (userId) => {
   if (difficultyStats.HARD >= 25) badges.push({ key: "hard-hunter", label: "Hard Hunter", tone: "hard" });
   if (user.currentStreak >= 7) badges.push({ key: "streak-7", label: "7 Day Streak", tone: "easy" });
 
+  const activitySubmissions = await db.submission.findMany({
+    where: { userId },
+    select: { createdAt: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const heatmap = {};
+  activitySubmissions.forEach((s) => {
+    const date = s.createdAt.toISOString().split("T")[0];
+    heatmap[date] = (heatmap[date] || 0) + 1;
+  });
+
+  const activeDays = Object.keys(heatmap).length;
+
   return {
     user,
     badges,
@@ -114,11 +128,12 @@ const buildProfilePayload = async (userId) => {
       acceptedSubmissions,
       acceptanceRate,
       difficultyStats,
+      activeDays,
     },
     tagStats: normalizedTagStats,
     recentSubmissions,
-    activityHeatmap: [],
-    activityKeys: [],
+    activityHeatmap: heatmap,
+    activityKeys: Object.keys(heatmap),
   };
 };
 

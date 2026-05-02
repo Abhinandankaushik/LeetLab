@@ -15,27 +15,34 @@ export default function ProfilePage() {
   const { user, loading } = useAuth();
   const [solved, setSolved] = React.useState<Problem[]>([]);
   const [subs, setSubs] = React.useState<Submission[]>([]);
+  const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
   const [activity, setActivity] = React.useState<{ activity: any[]; currentStreak: number; maxStreak: number; totalActive: number } | null>(null);
   const [topics, setTopics] = React.useState<{ tag: string; solved: number; total: number }[]>([]);
+
+  const availableYears = React.useMemo(() => {
+    if (!user?.createdAt) return [new Date().getFullYear()];
+    const startYear = new Date(user.createdAt).getFullYear();
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let y = currentYear; y >= startYear; y--) years.push(y);
+    return years;
+  }, [user]);
 
   React.useEffect(() => {
     if (!user) return;
     problemsApi.solved().then((r: any) => setSolved(r.problems || r.data || [])).catch(() => { });
     submissionsApi.all().then((r: any) => setSubs(r.submissions || r.data || [])).catch(() => { });
-    usersApi.activity(user.id).then(setActivity).catch(() => { });
     usersApi.topicStats(user.id).then((r) => setTopics(r.stats)).catch(() => { });
   }, [user]);
 
-  // Fallback: derive activity from submissions if endpoint missing
+  React.useEffect(() => {
+    if (!user) return;
+    usersApi.activity(user.id, selectedYear).then(setActivity).catch(() => { });
+  }, [user, selectedYear]);
+
   const heatmapData = React.useMemo(() => {
-    if (activity && activity.activity.length > 0) return activity.activity;
-    const map = new Map<string, number>();
-    subs.forEach((s) => {
-      const d = (s.createdAt || "").slice(0, 10);
-      if (d) map.set(d, (map.get(d) || 0) + 1);
-    });
-    return Array.from(map.entries()).map(([date, count]) => ({ date, count }));
-  }, [activity, subs]);
+    return activity?.activity || [];
+  }, [activity]);
 
   // Derive topic stats from solved problems if backend missing
   const topicData = React.useMemo(() => {
@@ -121,7 +128,12 @@ export default function ProfilePage() {
       {/* Heatmap + Monthly */}
       <div className="mt-8 flex flex-col lg:flex-row gap-6">
         <div className="flex-1 min-w-0">
-          <ActivityHeatmap data={heatmapData} />
+          <ActivityHeatmap 
+            data={heatmapData} 
+            year={selectedYear} 
+            onYearChange={setSelectedYear}
+            availableYears={availableYears}
+          />
         </div>
         <div className="w-full lg:w-80 shrink-0 mx-auto max-w-sm lg:max-w-none">
           <MonthlyStreak

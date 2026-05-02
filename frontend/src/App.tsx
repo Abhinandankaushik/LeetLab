@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 // Layout Components
 import { SiteHeader } from "@/components/site-header";
 import { PageTransition, ScrollProgress } from "@/components/page-transition";
+import { InteractiveBackground } from "@/components/interactive-background";
 
 // Page Components
 import Home from "@/routes/index";
@@ -65,6 +66,7 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <div className="relative z-10 flex min-h-screen flex-col">
+            <InteractiveBackground />
             <ScrollProgress />
             <SiteHeader />
             <main className="flex-1">
