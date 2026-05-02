@@ -115,7 +115,7 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 function PodiumCard({ place, entry }: { place: 1 | 2 | 3; entry: any }) {
-  const heights = { 1: "h-56", 2: "h-48", 3: "h-44" };
+  const heights = { 1: "min-h-[15rem]", 2: "min-h-[13rem]", 3: "min-h-[12rem]" };
   const accents = {
     1: "border-medium/40 bg-medium/5",
     2: "border-accent/40 bg-accent/5",
@@ -138,7 +138,9 @@ function PodiumCard({ place, entry }: { place: 1 | 2 | 3; entry: any }) {
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="mt-4 truncate font-display text-lg font-bold group-hover:text-primary transition-colors">{entry.user.name}</div>
+      <div className="mt-4 w-full truncate px-2 font-display text-lg font-bold group-hover:text-primary transition-colors leading-tight">
+        {entry.user.name}
+      </div>
       <div className={cn("mt-1 font-mono text-2xl font-black tracking-tight", ratingColor(entry.rating))}>{entry.rating}</div>
     </Link>
   );

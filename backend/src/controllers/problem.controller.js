@@ -54,6 +54,14 @@ export const createProblem = async (req, res) => {
     }
 
     try {
+        const existingProblem = await db.problem.findUnique({
+            where: { title }
+        });
+
+        if (existingProblem) {
+            return res.status(400).json({ success: false, error: "A problem with this title already exists. Please choose a different title." });
+        }
+
         await validateProblem(referenceSolutions, testcases);
 
         const newProblem = await db.problem.create({
@@ -254,6 +262,16 @@ export const updateProblem = async (req, res) => {
                 success: false,
                 message: "Problem not found",
             });
+        }
+
+        // Check for title uniqueness if title is being updated
+        if (title && title !== existingProblem.title) {
+            const titleConflict = await db.problem.findUnique({
+                where: { title }
+            });
+            if (titleConflict) {
+                return res.status(400).json({ success: false, error: "A problem with this title already exists. Please choose a different title." });
+            }
         }
 
         // Conditional validation: only run Judge0 if critical fields changed
