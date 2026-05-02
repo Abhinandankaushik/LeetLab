@@ -227,14 +227,22 @@ export const voteDiscussion = async (req, res) => {
             }
         });
 
+        // Check if discussion exists and get current counts
+        const discussion = await db.discussion.findUnique({ where: { id } });
+        if (!discussion) {
+            return res.status(404).json({ success: false, message: "Discussion not found" });
+        }
+
         if (existingVote) {
             if (existingVote.type === type) {
                 // Remove vote if same type clicked again
                 await db.vote.delete({ where: { id: existingVote.id } });
+                
+                const field = type === 'UPVOTE' ? 'upvotes' : 'downvotes';
                 await db.discussion.update({
                     where: { id },
                     data: {
-                        [type === 'UPVOTE' ? 'upvotes' : 'downvotes']: { decrement: 1 }
+                        [field]: { decrement: discussion[field] > 0 ? 1 : 0 }
                     }
                 });
             } else {
@@ -243,11 +251,15 @@ export const voteDiscussion = async (req, res) => {
                     where: { id: existingVote.id },
                     data: { type }
                 });
+
+                const addField = type === 'UPVOTE' ? 'upvotes' : 'downvotes';
+                const subField = type === 'UPVOTE' ? 'downvotes' : 'upvotes';
+
                 await db.discussion.update({
                     where: { id },
                     data: {
-                        [type === 'UPVOTE' ? 'upvotes' : 'downvotes']: { increment: 1 },
-                        [type === 'UPVOTE' ? 'downvotes' : 'upvotes']: { decrement: 1 }
+                        [addField]: { increment: 1 },
+                        [subField]: { decrement: discussion[subField] > 0 ? 1 : 0 }
                     }
                 });
             }

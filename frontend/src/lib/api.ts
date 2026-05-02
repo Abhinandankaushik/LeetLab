@@ -167,9 +167,15 @@ export interface DiscussPost {
 
 export interface DiscussComment {
   id: string;
+  discussionId: string;
+  userId: string;
   content: string;
-  user: { id: string; name: string; image?: string | null };
+  upvotes: number;
+  downvotes: number;
+  userVote?: "UPVOTE" | "DOWNVOTE" | null;
   createdAt: string;
+  user?: { id: string; name: string; username?: string; image?: string | null };
+  author?: { id: string; name: string };
 }
 
 export interface LeaderboardEntry {
@@ -278,6 +284,8 @@ export const discussApi = {
     api.post<{ comment: DiscussComment }>("/comments/add", { discussionId, content }),
   comment: (discussionId: string, content: string) =>
     api.post<{ comment: DiscussComment }>("/comments/add", { discussionId, content }),
+  voteComment: (id: string, type: "UPVOTE" | "DOWNVOTE") =>
+    api.post<{ votes: { upvotes: number; downvotes: number } }>(`/comments/vote/${id}`, { type }),
 };
 
 export const leaderboardApi = {
