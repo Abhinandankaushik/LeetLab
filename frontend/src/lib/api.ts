@@ -160,6 +160,7 @@ export interface DiscussPost {
   author?: { id: string; name: string; rating?: number };
   createdAt: string;
   commentCount?: number;
+  _count?: { comments: number };
   comments?: DiscussComment[];
   userVote?: "UPVOTE" | "DOWNVOTE" | null;
 }
@@ -270,9 +271,12 @@ export const discussApi = {
     api.post<{ discussion: DiscussPost }>("/discussions/create", data),
   vote: (id: string, type: "UPVOTE" | "DOWNVOTE") =>
     api.post<{ votes: { upvotes: number; downvotes: number } }>(`/discussions/vote/${id}`, { type }),
+  get: (id: string) => api.get<{ discussion: DiscussPost }>(`/discussions/${id}`),
   getComments: (discussionId: string) =>
     api.get<{ comments: DiscussComment[] }>(`/comments/${discussionId}`),
   addComment: (discussionId: string, content: string) =>
+    api.post<{ comment: DiscussComment }>("/comments/add", { discussionId, content }),
+  comment: (discussionId: string, content: string) =>
     api.post<{ comment: DiscussComment }>("/comments/add", { discussionId, content }),
 };
 

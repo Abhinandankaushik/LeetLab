@@ -2,11 +2,14 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { discussApi, type DiscussPost } from "@/lib/api";
-import { MessageSquare, ArrowUp, Eye, Pin, Search, Plus, Tag, Loader2, Send } from "lucide-react";
+import { 
+  MessageSquare, ArrowUp, Eye, Pin, Search, Plus, 
+  Tag, Loader2, Send, Filter, Clock, TrendingUp, Sparkles, User 
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ListSkeleton, EmptyState, ErrorState } from "@/components/empty-state";
+import { CardGridSkeleton, EmptyState, ErrorState } from "@/components/empty-state";
 import {
   Dialog,
   DialogContent,
@@ -26,12 +29,14 @@ import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 const TYPES = [
-  { key: "all", label: "All" },
+  { key: "all", label: "All Topics" },
   { key: "question", label: "Questions" },
   { key: "editorial", label: "Editorials" },
   { key: "interview-experience", label: "Interviews" },
+  { key: "problem", label: "Problems" },
   { key: "general", label: "General" },
 ] as const;
 
@@ -47,91 +52,123 @@ export default function DiscussPage() {
   const posts = data?.discussions ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-primary">/ discuss</p>
-          <h1 className="mt-2 font-display text-3xl md:text-4xl font-bold">Community brain trust</h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Ask, answer, share editorials, and learn from interview experiences.
+    <div className="mx-auto max-w-7xl px-4 py-10 stagger min-h-screen">
+      {/* Premium Header Section */}
+      <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+             <div className="h-1 w-8 bg-primary rounded-full" />
+             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary font-bold">Community Forum</p>
+          </div>
+          <h1 className="font-display text-4xl md:text-6xl font-black tracking-tighter leading-none">
+            Discuss <span className="text-muted-foreground/20">&</span> Learn
+          </h1>
+          <p className="max-w-xl text-muted-foreground text-sm leading-relaxed">
+            Join the most elite developers to exchange insights, share editorials, and crack interview experiences together.
           </p>
         </div>
         <NewPostDialog onPostCreated={() => refetch()} />
       </div>
 
-      <div className="mb-6 flex flex-col lg:flex-row lg:items-center gap-4">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search discussions..." value={q} onChange={(e) => setQ(e.target.value)} className="pl-9 h-11" />
+      {/* Modern Filter & Search Bar */}
+      <div className="mb-10 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4">
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Input 
+            placeholder="Search discussions, topics, or keywords..." 
+            value={q} 
+            onChange={(e) => setQ(e.target.value)} 
+            className="pl-11 h-12 bg-card/40 border-border/60 rounded-2xl focus:ring-primary/20 shadow-sm" 
+          />
         </div>
-        <div className="flex overflow-x-auto scrollbar-none pb-1">
-          <div className="flex items-center gap-1 rounded-md border border-border bg-card p-1 shrink-0">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1">
             {TYPES.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setType(t.key)}
                 className={cn(
-                  "rounded px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all shrink-0",
-                  type === t.key ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                  "h-12 px-5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all whitespace-nowrap border",
+                  type === t.key 
+                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+                    : "bg-card/40 text-muted-foreground border-border/60 hover:border-primary/40 hover:text-foreground hover:bg-card/80",
                 )}
               >
                 {t.label}
               </button>
             ))}
-          </div>
         </div>
       </div>
 
-      {isLoading && <ListSkeleton rows={6} />}
-      {isError && <ErrorState description="Couldn't load discussions." onRetry={() => refetch()} />}
+      {/* Content Area */}
+      {isLoading && <CardGridSkeleton count={6} />}
+      {isError && <ErrorState description="The discourse has encountered a temporary anomaly." onRetry={() => refetch()} />}
       {!isLoading && !isError && posts.length === 0 && (
         <EmptyState
           icon={MessageSquare}
-          title="No posts yet"
-          description="Discuss endpoints aren't yet available on the backend, or no posts match these filters. Add /discuss routes to your Express server to enable the forum."
+          title="The silence is deafening"
+          description="Be the one to start the conversation. No posts match your current search parameters."
+          className="py-32"
         />
       )}
 
-      <div className="space-y-3">
-        {posts.map((p) => <PostRow key={p.id} post={p} />)}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {posts.map((p) => <PostCard key={p.id} post={p} />)}
       </div>
     </div>
   );
 }
 
-function PostRow({ post }: { post: DiscussPost }) {
+function PostCard({ post }: { post: DiscussPost }) {
+  const typeColors: Record<string, string> = {
+    question: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+    editorial: "bg-easy/10 text-easy border-easy/20",
+    "interview-experience": "bg-blue-500/10 text-blue-500 border-blue-500/20",
+    general: "bg-primary/10 text-primary border-primary/20"
+  };
+
   return (
     <Link
       to={`/discuss/${post.id}`}
-      className="group block rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50"
+      className="group relative flex flex-col rounded-3xl border border-border bg-card/40 p-6 backdrop-blur-sm transition-all hover:bg-card hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/5 hover-lift overflow-hidden"
     >
-      <div className="flex items-start gap-4">
-        <div className="flex flex-col items-center gap-1 rounded-md bg-muted/40 px-2 py-1.5">
-          <ArrowUp className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="font-mono text-xs font-bold">{post.upvotes}</span>
+      {post.isPinned && (
+        <div className="absolute top-0 right-0 p-3">
+          <div className="p-1.5 rounded-full bg-primary/10 text-primary animate-pulse">
+            <Pin className="h-3 w-3 fill-current" />
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            {post.isPinned && <Pin className="h-3 w-3 text-primary" />}
-            <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-primary">{post.type}</span>
-            {post.problemId && (
-              <span className="text-[10px] text-muted-foreground font-mono">/ {post.problem?.title}</span>
-            )}
-          </div>
-          <h3 className="mt-1.5 truncate font-display text-base font-semibold group-hover:text-primary">
-            {post.problemId ? `${post.problem?.title}: ${post.title}` : post.title}
-          </h3>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span>by <span className="font-mono text-foreground/80">{post.user?.name || post.author?.name || "Anonymous"}</span></span>
-            <span className="font-mono">{new Date(post.createdAt).toLocaleDateString()}</span>
-            <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{post.views}</span>
-            <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" />{post.commentCount ?? 0}</span>
-            {post.tags?.slice(0, 3).map((t) => (
-              <span key={t} className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">
-                <Tag className="h-2.5 w-2.5" />{t}
-              </span>
-            ))}
-          </div>
+      )}
+
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-4">
+          <Badge variant="outline" className={cn("rounded-full text-[9px] font-black uppercase tracking-widest border px-2 py-0.5", typeColors[post.type.toLowerCase()] || typeColors.general)}>
+            {post.type}
+          </Badge>
+          {post.problemId && (
+            <span className="text-[10px] font-mono text-muted-foreground/60 truncate uppercase tracking-tighter">
+              / {post.problem?.title}
+            </span>
+          )}
+        </div>
+
+        <h3 className="font-display text-xl font-bold tracking-tight leading-tight group-hover:text-primary transition-colors line-clamp-2 min-h-[3rem]">
+          {post.title}
+        </h3>
+
+        {/* Metadata removed as per user request */}
+      </div>
+
+      <div className="mt-8 pt-5 border-t border-border/40 flex items-center justify-between">
+        <div className="flex items-center gap-4 text-[10px] font-mono text-muted-foreground font-bold">
+           <span className="flex items-center gap-1.5 hover:text-primary transition-colors">
+              <TrendingUp className="h-3 w-3" /> {post.upvotes ?? 0}
+           </span>
+           <span className="flex items-center gap-1.5">
+              <MessageSquare className="h-3 w-3" /> {post._count?.comments ?? post.commentCount ?? 0}
+           </span>
+        </div>
+        <div className="p-2 rounded-xl bg-muted/40 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+           <Plus className="h-3.5 w-3.5" />
         </div>
       </div>
     </Link>
@@ -150,7 +187,7 @@ function NewPostDialog({ onPostCreated }: { onPostCreated: () => void }) {
   const createMut = useMutation({
     mutationFn: (data: any) => discussApi.create(data),
     onSuccess: () => {
-      toast.success("Post created successfully!");
+      toast.success("Perspective published to the grid.");
       setOpen(false);
       setTitle("");
       setContent("");
@@ -159,14 +196,14 @@ function NewPostDialog({ onPostCreated }: { onPostCreated: () => void }) {
       qc.invalidateQueries({ queryKey: ["discuss"] });
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to create post");
+      toast.error(err.message || "Uplink failed. Try again.");
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return toast.error("Please sign in to post");
-    if (!title.trim() || !content.trim()) return toast.error("Title and content are required");
+    if (!user) return toast.error("Authentication required to broadcast.");
+    if (!title.trim() || !content.trim()) return toast.error("All signals (title/content) must be non-empty.");
 
     createMut.mutate({
       title: title.trim(),
@@ -179,63 +216,74 @@ function NewPostDialog({ onPostCreated }: { onPostCreated: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="btn-shine">
-          <Plus className="h-4 w-4 mr-2" /> New post
+        <Button className="h-12 px-8 rounded-2xl font-black uppercase tracking-widest gap-2 shadow-xl shadow-primary/20 animate-in fade-in zoom-in duration-500">
+          <Plus className="h-4 w-4" /> Start Discussion
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-bold">Create New Discussion</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+      <DialogContent className="sm:max-w-[700px] rounded-3xl border-border bg-background p-0 overflow-hidden shadow-2xl">
+        <div className="p-6 md:p-8 bg-muted/10 border-b border-border/60">
+           <DialogHeader>
+             <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Post Creation Arena</span>
+             </div>
+             <DialogTitle className="font-display text-3xl font-black tracking-tighter">Share your wisdom</DialogTitle>
+           </DialogHeader>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
           <div className="space-y-2">
-            <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Title</label>
+            <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Discussion Headline</label>
             <Input 
-              placeholder="What's on your mind?" 
+              placeholder="e.g. My journey into FAANG with LeetLab..." 
               value={title} 
               onChange={(e) => setTitle(e.target.value)} 
-              className="font-display text-lg"
+              className="h-12 bg-card border-border/40 font-display text-lg font-bold rounded-xl"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Type</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Topic Category</label>
               <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
+                <SelectTrigger className="h-12 bg-card border-border/40 rounded-xl">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl border-border bg-card/95 backdrop-blur-md">
                   {TYPES.filter(t => t.key !== 'all').map(t => (
-                    <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>
+                    <SelectItem key={t.key} value={t.key} className="text-xs font-bold uppercase tracking-tight">{t.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Tags (comma separated)</label>
+              <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Keywords (CSV)</label>
               <Input 
-                placeholder="e.g. array, interview, help" 
+                placeholder="array, help, interview" 
                 value={tags} 
                 onChange={(e) => setTags(e.target.value)} 
+                className="h-12 bg-card border-border/40 rounded-xl"
               />
             </div>
           </div>
+
           <div className="space-y-2">
-            <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Content</label>
+            <label className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/60">Detailed Content</label>
             <Textarea 
-              placeholder="Write your post here... Markdown is supported." 
+              placeholder="Deep dive into your thoughts... Markdown supported." 
               value={content} 
               onChange={(e) => setContent(e.target.value)} 
-              className="min-h-[200px] resize-none"
+              className="min-h-[250px] bg-card border-border/40 rounded-2xl resize-none p-5 text-sm leading-relaxed"
             />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={createMut.isPending} className="btn-shine">
+
+          <div className="pt-4 flex items-center justify-between">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="rounded-xl font-bold text-xs uppercase">Abort</Button>
+            <Button type="submit" disabled={createMut.isPending} className="h-12 px-10 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-primary/20">
               {createMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-              Publish Post
+              Publish to Grid
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

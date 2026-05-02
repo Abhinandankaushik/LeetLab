@@ -88,7 +88,30 @@ export const getProblemDiscussions = async (req, res) => {
 
 export const getAllDiscussions = async (req, res) => {
     try {
+        const { type, q } = req.query;
+        
+        const where = {};
+        if (type && type !== 'all') {
+            if (type === 'problem') {
+                where.problemId = { not: null };
+            } else {
+                where.type = {
+                    equals: type,
+                    mode: 'insensitive'
+                };
+            }
+        }
+        
+        if (q) {
+            where.OR = [
+                { title: { contains: q, mode: 'insensitive' } },
+                { content: { contains: q, mode: 'insensitive' } },
+                { tags: { has: q } }
+            ];
+        }
+
         const discussions = await db.discussion.findMany({
+            where,
             include: {
                 user: {
                     select: {
