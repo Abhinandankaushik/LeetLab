@@ -24,6 +24,7 @@ import Leaderboard from "@/routes/leaderboard";
 import Login from "@/routes/login";
 import Register from "@/routes/register";
 import Playlists from "@/routes/playlists";
+import PlaylistDetail from "@/routes/playlists.$id";
 import Problems from "@/routes/problems";
 import ProblemsDetail from "@/routes/problems.$problemId";
 import Profile from "@/routes/profile";
@@ -83,6 +84,7 @@ function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/playlists" element={<Playlists />} />
+                  <Route path="/playlists/:id" element={<PlaylistDetail />} />
                   <Route path="/problems" element={<Problems />} />
                   <Route path="/problems/:problemId" element={<ProblemsDetail />} />
                   <Route path="/profile" element={<Profile />} />
