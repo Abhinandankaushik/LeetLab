@@ -7,18 +7,27 @@ export const getAllSubmission = async (req, res) => {
 
         const userId = req.user.id;
 
-        const submission = await db.submission.findMany({
+        const submissions = await db.submission.findMany({
             where: {
                 userId: userId
+            },
+            include: {
+                problem: {
+                    select: {
+                        title: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
             }
-        })
-
+        });
 
         res.status(200).json({
             success: true,
-            message: "Submission fetched successfully",
-            submission: submission
-        })
+            message: "Submissions fetched successfully",
+            submissions: submissions
+        });
 
     } catch (err) {
 
