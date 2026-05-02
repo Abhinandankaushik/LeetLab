@@ -8,6 +8,8 @@ export const excutecode = async (req, res) => {
 
         const { source_code, language_id, expected_outputs, stdin, problemId, isSubmit } = req.body;
 
+
+
         const userId = req.user.id;
 
         if (
@@ -84,6 +86,8 @@ export const excutecode = async (req, res) => {
             }));
         }
 
+
+
         console.log(`🚀 Executing ${testcasesToRun.length} test cases for problem: ${problem.title}`);
         testcasesToRun.forEach((tc, i) => {
             console.log(`   [TC ${i + 1}] Input: "${tc.input}" | Expected: "${tc.expectedOutput}"`);
@@ -91,12 +95,15 @@ export const excutecode = async (req, res) => {
 
         // 3. Send and Evaluate submissions using the pipeline
         const result = await runSubmissions({
-            source_code: source_code.slice(0, 50000),
+            source_code: source_code,
             language_id,
             testcases: testcasesToRun
         });
 
+
+
         const allPassed = result.status === "Accepted";
+
 
         // Map pipeline details back to the controller's format
         const detailedResults = result.details.map((detail, index) => {
@@ -196,74 +203,93 @@ export const excutecode = async (req, res) => {
         })
 
 
+        // ================== FINAL SANITIZATION LOGIC ==================
+
         const totalCount = testcasesToRun.length;
         const passedCount = detailedResults.filter(r => r.passed).length;
 
-        // Helper to normalize strings for comparison (trim every line)
-        const normalize = (s) => String(s ?? "")
-            .replace(/\r\n/g, "\n")
-            .split('\n')
-            .map(line => line.trim())
-            .join('\n')
-            .trim();
-        
-        // Extract example inputs to identify public cases
-        const examples = Array.isArray(problem.examples) 
-            ? problem.examples 
-            : problem.examples ? Object.values(problem.examples) : [];
-        const exampleInputs = new Set(examples.map(ex => normalize(ex.input)));
+        // 🔥 Strong normalization (VERY IMPORTANT)
+        const normalize = (s) =>
+            String(s ?? "")
+                .replace(/\r\n/g, "\n")
+                .replace(/\s+/g, " ")
+                .trim();
 
-        // Sanitize results: separate public detailed and hidden summary
+        // Extract examples safely
+        const examples = Array.isArray(problem.examples)
+            ? problem.examples
+            : problem.examples
+                ? Object.values(problem.examples)
+                : [];
+
+        // 🔥 Create normalized example input set
+        const exampleInputs = new Set(
+            examples.map(ex => normalize(ex.input))
+        );
+
+
+        // ================== FILTERING ==================
+        const isAdmin = req.user.role === "ADMIN";
         const publicTestCases = [];
         let hiddenPassedCount = 0;
         let hiddenFailedCount = 0;
 
-        detailedResults.forEach((res, idx) => {
-            const normalizedStdin = normalize(res.stdin);
-            const isPublic = exampleInputs.has(normalizedStdin);
-            
-            console.log(`[DEBUG] TC ${idx+1} | Stdin: "${normalizedStdin}" | isPublic: ${isPublic}`);
-            if (!isPublic) {
-                console.log(`        Example Inputs in Set:`, Array.from(exampleInputs));
-            }
+        detailedResults.forEach((res) => {
+            const normalizedInput = normalize(res.stdin);
 
-            if (isPublic) {
-                publicTestCases.push(res);
+            // 🔥 RULE: if exists in examples OR user is admin → ALWAYS show
+            const isExample = exampleInputs.has(normalizedInput);
+
+            if (isAdmin || isExample) {
+                publicTestCases.push({
+                    ...res,
+                    type: isExample ? "EXAMPLE" : "HIDDEN (ADMIN VIEW)"
+                });
             } else {
-                if (res.passed) {
-                    hiddenPassedCount++;
-                } else {
-                    hiddenFailedCount++;
-                }
+                // hidden testcase → only count
+                if (res.passed) hiddenPassedCount++;
+                else hiddenFailedCount++;
             }
         });
 
-        const submissionResponse = submissionWithTestCase || {
-            status: allPassed ? "Accepted" : "Wrong Answer",
-            language: getLanguageName(language_id),
-        };
+
+
+        // ================== FINAL RESPONSE ==================
 
         return res.status(200).json({
             success: true,
-            message: isSubmit ? "code submitted successfully" : "code executed successfully",
-            submission: {
-                ...submissionResponse,
-                testCases: publicTestCases,
-                hiddenPassedCount,
-                hiddenFailedCount,
-                totalHiddenCases: hiddenPassedCount + hiddenFailedCount
-            },
-            passedCount,
-            totalCount
-        })
+            message: isSubmit
+                ? "code submitted successfully"
+                : "code executed successfully",
 
-    } catch (err) {
-        console.error("EXECUTION ERROR:", err);
+            submission: {
+                ...(submissionWithTestCase || {
+                    status: allPassed ? "Accepted" : "Wrong Answer",
+                    language: getLanguageName(language_id),
+                }),
+
+                // 🔥 ONLY example testcases sent (unless admin)
+                testCases: publicTestCases,
+
+                // 🔥 hidden summary only (unless admin)
+                hiddenPassedCount: isAdmin ? 0 : hiddenPassedCount,
+                hiddenFailedCount: isAdmin ? 0 : hiddenFailedCount,
+                totalHiddenCases: isAdmin ? 0 : (hiddenPassedCount + hiddenFailedCount)
+            },
+
+            // 🔥 overall stats
+            totalCount,
+            passedCount
+        });
+
+
+    }
+    catch (error) {
+        console.log(error);
         res.status(500).json({
             success: false,
-            message: "Internal Server Error while executing code",
-            error: err.message,
+            message: "Error while executing code",
+            error: error.message,
         })
     }
-
 }

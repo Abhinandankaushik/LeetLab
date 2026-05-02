@@ -36,7 +36,11 @@ const problemSchema = z.object({
   hints: z.string().optional(),
   editorial: z.string().optional(),
   testcases: z.any().optional(),
-  examples: z.any().optional(),
+  examples: z.array(z.object({
+    input: z.string(),
+    output: z.string(),
+    explanation: z.string().optional()
+  })).optional(),
   codeSnippets: z.any().optional(),
   referenceSolutions: z.any().optional(),
 });
@@ -68,9 +72,9 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
       defficulty: "MEDIUM",
       tags: [""],
       testcases: [{ input: "", output: "" }],
+      examples: [{ input: "", output: "", explanation: "" }],
       codeSnippets: { JAVASCRIPT: "" },
       referenceSolutions: { JAVASCRIPT: "" },
-      examples: {},
       visibility: "PUBLIC"
     },
   });
@@ -108,7 +112,11 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
             hints: problem.hints || "",
             editorial: problem.editorial || "",
             testcases: Array.isArray(problem.testcases) ? problem.testcases : [{ input: "", output: "" }],
-            examples: problem.examples || {},
+            examples: Array.isArray(problem.examples) 
+              ? problem.examples 
+              : problem.examples 
+                ? Object.values(problem.examples) 
+                : [{ input: "", output: "", explanation: "" }],
             codeSnippets: problem.codeSnippets || {},
             referenceSolutions: problem.referenceSolutions || {},
           });
@@ -132,6 +140,11 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
   const { fields: tagFields, append: appendTag, remove: removeTag } = useFieldArray({
     control,
     name: "tags",
+  });
+
+  const { fields: exampleFields, append: appendExample, remove: removeExample } = useFieldArray({
+    control,
+    name: "examples",
   });
 
   const handleJsonImport = () => {
@@ -165,6 +178,14 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
         data.referenceSolutions = normalized;
       }
 
+      if (data.examples) {
+        data.examples = Array.isArray(data.examples) 
+          ? data.examples 
+          : Object.values(data.examples);
+      } else {
+        data.examples = [{ input: "", output: "", explanation: "" }];
+      }
+
       // Basic validation for essential fields
       if (!data.title || !data.testcases || !data.codeSnippets) {
         throw new Error("Invalid JSON format. Missing required fields (title, testcases, codeSnippets).");
@@ -187,15 +208,6 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
       // Logic for examples: if not provided, use first testcase
       const finalData = {
         ...values,
-        examples: values.examples && Object.keys(values.examples).length > 0 
-          ? values.examples 
-          : {
-              [activeLang]: {
-                input: values.testcases[0].input || "",
-                output: values.testcases[0].output,
-                explanation: "Auto-generated from first testcase"
-              }
-            }
       };
       
       if (problemId) {
@@ -452,6 +464,60 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
                 ))}
                 <Button type="button" variant="outline" size="sm" className="w-full border-dashed" onClick={() => appendTag("")}>
                   <Plus className="h-3 w-3 mr-1" /> Add Tag
+                </Button>
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" /> Examples
+                </h2>
+                <div className="text-xs text-muted-foreground">{exampleFields.length} total</div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">These are shown publicly in the problem description.</p>
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
+                {exampleFields.map((field, index) => (
+                  <div key={field.id} className="p-3 sm:p-4 rounded-md border border-primary/20 space-y-3 relative group bg-primary/5">
+                    <div className="absolute top-2 right-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button type="button" onClick={() => removeExample(index)} className="p-1 text-destructive hover:bg-destructive/10 rounded-md transition-colors">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                        Input <ChevronRight className="h-2 w-2" />
+                      </label>
+                      <textarea 
+                        {...register(`examples.${index}.input`)}
+                        className="w-full rounded border border-input bg-background px-2 py-1 text-xs font-mono min-h-[40px] focus:ring-1 ring-primary"
+                        placeholder="e.g. n = 5"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                        Output <ChevronRight className="h-2 w-2" />
+                      </label>
+                      <textarea 
+                        {...register(`examples.${index}.output`)}
+                        className="w-full rounded border border-input bg-background px-2 py-1 text-xs font-mono min-h-[40px] focus:ring-1 ring-primary"
+                        placeholder="e.g. 120"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                        Explanation (Optional) <ChevronRight className="h-2 w-2" />
+                      </label>
+                      <textarea 
+                        {...register(`examples.${index}.explanation`)}
+                        className="w-full rounded border border-input bg-background px-2 py-1 text-xs min-h-[40px] focus:ring-1 ring-primary"
+                        placeholder="Explain how the output was derived..."
+                      />
+                    </div>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" className="w-full border-dashed" onClick={() => appendExample({ input: "", output: "", explanation: "" })}>
+                  <Plus className="h-3 w-3 mr-1" /> Add Example
                 </Button>
               </div>
             </section>

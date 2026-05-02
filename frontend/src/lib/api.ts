@@ -100,6 +100,11 @@ export interface Submission {
   createdAt: string;
   testCases?: TestCaseResult[];
   problem?: Problem;
+  totalCount?: number;
+  passedCount?: number;
+  hiddenPassedCount?: number;
+  hiddenFailedCount?: number;
+  totalHiddenCases?: number;
 }
 
 export interface TestCaseResult {

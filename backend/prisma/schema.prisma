@@ -165,6 +165,7 @@ model TestCaseResult {
   time          String?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+  isExample     Boolean    @default(false)
   submission    Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
   @@index([submissionId])

@@ -97,7 +97,7 @@ export const getSubmissionCountByProblemId = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Submission count fetched successfully",
-            count : submissionCount
+            count: submissionCount
         })
     } catch (err) {
 
@@ -114,12 +114,13 @@ export const getSubmissionDetailsById = async (req, res) => {
 
     try {
         const userId = req.user.id;
+        const isAdmin = req.user.role === 'ADMIN';
         const submissionId = req.params.submissionId;
 
         const submission = await db.submission.findFirst({
             where: {
                 id: submissionId,
-                userId,
+                ...(isAdmin ? {} : { userId }),
             },
             include: {
                 testCases: true,
@@ -150,10 +151,10 @@ export const getSubmissionDetailsById = async (req, res) => {
             .map(line => line.trim())
             .join('\n')
             .trim();
-        
+
         // Extract example inputs
-        const examples = Array.isArray(submission.problem.examples) 
-            ? submission.problem.examples 
+        const examples = Array.isArray(submission.problem.examples)
+            ? submission.problem.examples
             : submission.problem.examples ? Object.values(submission.problem.examples) : [];
         const exampleInputs = new Set(examples.map(ex => normalize(ex.input)));
 
@@ -163,8 +164,9 @@ export const getSubmissionDetailsById = async (req, res) => {
         let hiddenFailedCount = 0;
 
         submission.testCases.forEach(tc => {
-            const isPublic = exampleInputs.has(normalize(tc.stdin));
-            if (isPublic) {
+            const normalizedInput = normalize(tc.stdin);
+            const isPublic = exampleInputs.has(normalizedInput);
+            if (isAdmin || isPublic) {
                 publicTestCases.push(tc);
             } else {
                 if (tc.passed) {
@@ -175,15 +177,20 @@ export const getSubmissionDetailsById = async (req, res) => {
             }
         });
 
+        const totalCount = submission.testCases.length;
+        const passedCount = submission.testCases.filter(tc => tc.passed).length;
+
         res.status(200).json({
             success: true,
             message: "Submission fetched successfully",
             submission: {
                 ...submission,
                 testCases: publicTestCases,
-                hiddenPassedCount,
-                hiddenFailedCount,
-                totalHiddenCases: hiddenPassedCount + hiddenFailedCount
+                hiddenPassedCount: isAdmin ? 0 : hiddenPassedCount,
+                hiddenFailedCount: isAdmin ? 0 : hiddenFailedCount,
+                totalHiddenCases: isAdmin ? 0 : (hiddenPassedCount + hiddenFailedCount),
+                totalCount,
+                passedCount
             },
         });
     } catch (err) {

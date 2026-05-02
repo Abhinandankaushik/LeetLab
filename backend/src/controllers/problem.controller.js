@@ -3,7 +3,7 @@ import { getJudge0LanguageId, submitBatch, pollBatchResults, runSubmissions } fr
 
 const validateProblem = async (referenceSolutions, testcases) => {
     const langsToValidate = Object.keys(referenceSolutions || {});
-    
+
     if (langsToValidate.length === 0) {
         throw new Error("Reference solutions are required for validation");
     }
@@ -189,7 +189,7 @@ export const getProblemById = async (req, res) => {
             }
         }
 
-        // Define fields to return (excluding testcases and referenceSolutions)
+        // Define fields to return
         const problemData = {
             id: problem.id,
             title: problem.title,
@@ -204,6 +204,12 @@ export const getProblemById = async (req, res) => {
             codeSnippets: problem.codeSnippets,
             contestProblems: problem.contestProblems
         };
+
+        // If admin, include sensitive fields for editing
+        if (req.user?.role === 'ADMIN') {
+            problemData.testcases = problem.testcases;
+            problemData.referenceSolutions = problem.referenceSolutions;
+        }
 
         res.status(200).json({
             success: true,
@@ -251,7 +257,7 @@ export const updateProblem = async (req, res) => {
         }
 
         // Conditional validation: only run Judge0 if critical fields changed
-        const needsValidation = 
+        const needsValidation =
             (testcases && JSON.stringify(testcases) !== JSON.stringify(existingProblem.testcases)) ||
             (codeSnippets && JSON.stringify(codeSnippets) !== JSON.stringify(existingProblem.codeSnippets)) ||
             (referenceSolutions && JSON.stringify(referenceSolutions) !== JSON.stringify(existingProblem.referenceSolutions));

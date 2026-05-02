@@ -1,5 +1,12 @@
 # 🚀 LeetLab: Premium Competitive Coding Platform
 
+
+"""
+
+tumhe meine reflab ka ek folder provide kiya hai jaha frontend ka component implemented hia backend ke sath api call krkre data render kr rha ,like for admin create problem , problem page , contest create contest manage , and etc aur jo component nahi banaye hai tumne frontend me wo sare bana ke backend ke sath integrate kro sara chij aur jo jo admin ko ek code leetcode jaise website ko manage krne ke liye cahiye wo sara chij implement kro sara chij dynamic ho koi bhi static na ho sab kuch backend ke sath wired ho data fetch krke render krne ke liye and make sure theme aur sytle sara frontend ke hisab se ho 
+
+"""
+
 ![LeetLab](https://img.shields.io/badge/LeetLab-v1.0-blueviolet)
 ![React](https://img.shields.io/badge/React-19-blue)
 ![Express](https://img.shields.io/badge/Express-5.1-green)

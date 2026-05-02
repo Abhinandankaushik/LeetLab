@@ -2,8 +2,8 @@ import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import {
-  problemsApi, executeApi, submissionsApi, discussApi, LANGUAGES,
-  type Problem, type Submission, type DiscussPost
+  problemsApi, executeApi, submissionsApi, discussApi, playlistsApi, LANGUAGES,
+  type Problem, type Submission, type DiscussPost, type Playlist
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
@@ -14,7 +14,7 @@ import { DifficultyBadge } from "@/components/difficulty-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AICodePanel } from "@/components/ai-code-panel";
 import { EditorToolbar } from "@/components/EditorToolbar";
-import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Send, ShieldAlert } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Send, ShieldAlert, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Bookmark } from "lucide-react";
@@ -35,10 +35,10 @@ import * as Resizable from "react-resizable-panels";
 
 
 export default function ProblemDetail() {
-  const { 
-    PanelResizeHandle: ResizableHandle, 
-    Panel: ResizablePanel, 
-    PanelGroup: ResizablePanelGroup 
+  const {
+    PanelResizeHandle: ResizableHandle,
+    Panel: ResizablePanel,
+    PanelGroup: ResizablePanelGroup
   } = Resizable;
 
   const { problemId } = useParams();
@@ -57,6 +57,7 @@ export default function ProblemDetail() {
   const [submissions, setSubmissions] = React.useState<Submission[]>([]);
   const [problemDiscussions, setProblemDiscussions] = React.useState<DiscussPost[]>([]);
   const [isPlaylistOpen, setIsPlaylistOpen] = React.useState(false);
+  const [userPlaylists, setUserPlaylists] = React.useState<Playlist[]>([]);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const [editorSettings, setEditorSettings] = React.useState({
     fontSize: 14,
@@ -132,17 +133,17 @@ export default function ProblemDetail() {
         const p: Problem = res.problem || res.data;
         if (!cancel) {
           setProblem(p);
-          
+
           // Dynamic Language filtering: only show what the problem supports
-          const supportedLangs = LANGUAGES.filter(l => 
-            (p.codeSnippets && p.codeSnippets[l.key]) || 
+          const supportedLangs = LANGUAGES.filter(l =>
+            (p.codeSnippets && p.codeSnippets[l.key]) ||
             (p.referenceSolutions && p.referenceSolutions[l.key])
           );
 
           // Fallback to all if somehow none match, but usually pick first supported
           const available = supportedLangs.length > 0 ? supportedLangs : LANGUAGES;
           const initial = available[0];
-          
+
           setLang(initial);
           setCode(p.codeSnippets?.[initial.key] || "");
         }
@@ -173,24 +174,32 @@ export default function ProblemDetail() {
     }).catch(() => { });
   }, [problemId]);
 
+  React.useEffect(() => {
+    if (user) {
+      playlistsApi.all().then((res: any) => {
+        setUserPlaylists(res.playlists || []);
+      }).catch(() => { });
+    }
+  }, [user, isPlaylistOpen]); // Re-fetch when user changes or after a playlist modification (dialog closes)
+
   const handleRun = async (isSubmit: boolean = false) => {
     if (!user) { toast.error("Sign in to run code"); navigate("/login"); return; }
     if (!problem) return;
-    
+
     // Auto-open console if it's currently small/closed
     setConsoleHeight(prev => Math.max(prev, 35));
-    setRunning(true); 
+    setRunning(true);
     setResult(null);
     try {
       // If submitting, don't send test cases (backend fetches hidden ones)
       // If running, send examples as test cases
-      const examples: any[] = Array.isArray(problem.examples) 
-        ? problem.examples 
+      const examples: any[] = Array.isArray(problem.examples)
+        ? problem.examples
         : (problem.examples ? Object.values(problem.examples) : []);
-        
+
       const stdins = !isSubmit ? examples.map((t) => String(t.input ?? "")) : undefined;
       const expected = !isSubmit ? examples.map((t) => String(t.output ?? "")) : undefined;
-      
+
       const res: any = await executeApi.run({
         source_code: code,
         language_id: lang.id,
@@ -199,10 +208,17 @@ export default function ProblemDetail() {
         problemId: problem.id,
         isSubmit: isSubmit
       });
-      
-      const sub: Submission = res.submission || res.data || res;
+
+      const sub: Submission = {
+        ...(res.submission || res.data || res),
+        totalCount: res.totalCount,
+        passedCount: res.passedCount,
+        hiddenPassedCount: res.submission?.hiddenPassedCount ?? res.hiddenPassedCount,
+        hiddenFailedCount: res.submission?.hiddenFailedCount ?? res.hiddenFailedCount,
+        totalHiddenCases: res.submission?.totalHiddenCases ?? res.totalHiddenCases,
+      };
       setResult(sub);
-      
+
       const ok = sub.status?.toLowerCase().includes("accept");
       if (ok) {
         toast.success(isSubmit ? "Solution Accepted! 🎉" : "All testcases passed ✓");
@@ -248,6 +264,10 @@ export default function ProblemDetail() {
     ? problem.examples
     : problem.examples ? Object.values(problem.examples) : [];
 
+  const isProblemSaved = userPlaylists.some(p =>
+    p.problems?.some(pp => pp.problem.id === problemId)
+  );
+
   return (
     <div className={cn(
       "flex flex-col bg-background",
@@ -260,7 +280,7 @@ export default function ProblemDetail() {
         {/* Left: description - Hidden in Fullscreen */}
         {!isFullscreen && (
           <>
-            <div 
+            <div
               className={cn(
                 "bg-background shrink-0",
                 !isDragging && "transition-all duration-300",
@@ -277,13 +297,17 @@ export default function ProblemDetail() {
                     <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight">{problem.title}</h1>
                     <DifficultyBadge value={problem.defficulty} />
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center gap-2 h-8 w-fit shrink-0"
+                  <Button
+                    variant={isProblemSaved ? "secondary" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "flex items-center gap-2 h-8 w-fit shrink-0 transition-all duration-300",
+                      isProblemSaved && "bg-primary/20 border-primary/30 text-primary hover:bg-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.1)]"
+                    )}
                     onClick={() => setIsPlaylistOpen(true)}
                   >
-                    <Bookmark className="h-4 w-4" /> Save
+                    <Bookmark className={cn("h-4 w-4", isProblemSaved && "fill-current")} />
+                    {isProblemSaved ? "Saved" : "Save"}
                   </Button>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1">
@@ -373,8 +397,8 @@ export default function ProblemDetail() {
                       {submissions.map((s) => {
                         const ok = s.status?.toLowerCase().includes("accept");
                         return (
-                          <div 
-                            key={s.id} 
+                          <div
+                            key={s.id}
                             onClick={async () => {
                               try {
                                 const { submission: fullSub } = await submissionsApi.get(s.id);
@@ -413,10 +437,10 @@ export default function ProblemDetail() {
                     </div>
                   </TabsContent>
                   <TabsContent value="discuss" className="mt-4 animate-in fade-in duration-300">
-                    <DiscussionPanel 
-                      problemId={problemId!} 
-                      discussions={problemDiscussions} 
-                      setDiscussions={setProblemDiscussions} 
+                    <DiscussionPanel
+                      problemId={problemId!}
+                      discussions={problemDiscussions}
+                      setDiscussions={setProblemDiscussions}
                     />
                   </TabsContent>
                 </Tabs>
@@ -425,7 +449,7 @@ export default function ProblemDetail() {
             {/* Drag Handle */}
             {/* Drag Handle - Desktop Only */}
             {!isMobile && (
-              <div 
+              <div
                 onMouseDown={handleMouseDown}
                 className="w-1.5 h-full cursor-col-resize hover:bg-primary/40 transition-colors bg-border/40 z-10"
               />
@@ -434,7 +458,7 @@ export default function ProblemDetail() {
         )}
 
         {/* Right: editor + result */}
-        <div 
+        <div
           className={cn(
             "flex flex-col bg-card shrink-0",
             !isDragging && "transition-all duration-300",
@@ -442,7 +466,7 @@ export default function ProblemDetail() {
           )}
           style={isMobile ? {} : { width: isFullscreen ? "100%" : `${editorSettings.editorWidth}%` }}
         >
-          <EditorToolbar 
+          <EditorToolbar
             onRun={() => handleRun(false)}
             onSubmit={() => handleRun(true)}
             running={running}
@@ -450,11 +474,11 @@ export default function ProblemDetail() {
             onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
             settings={editorSettings}
             onSettingsChange={setEditorSettings}
-            languages={LANGUAGES.filter(l => 
-              (problem?.codeSnippets && problem.codeSnippets[l.key]) || 
+            languages={LANGUAGES.filter(l =>
+              (problem?.codeSnippets && problem.codeSnippets[l.key]) ||
               (problem?.referenceSolutions && problem.referenceSolutions[l.key])
-            ).length > 0 ? LANGUAGES.filter(l => 
-              (problem?.codeSnippets && problem.codeSnippets[l.key]) || 
+            ).length > 0 ? LANGUAGES.filter(l =>
+              (problem?.codeSnippets && problem.codeSnippets[l.key]) ||
               (problem?.referenceSolutions && problem.referenceSolutions[l.key])
             ) : LANGUAGES}
             activeLang={lang}
@@ -548,7 +572,7 @@ export default function ProblemDetail() {
                   });
                 }}
                 onMount={(editor, monaco) => {
-                   // No-op or extra setup if needed
+                  // No-op or extra setup if needed
                 }}
                 options={{
                   fontFamily: editorSettings.fontFamily,
@@ -565,9 +589,9 @@ export default function ProblemDetail() {
                   smoothScrolling: true,
                   lineNumbersMinChars: 4,
                   bracketPairColorization: { enabled: true },
-                  guides: { 
+                  guides: {
                     indentation: true,
-                    bracketPairs: true 
+                    bracketPairs: true
                   },
                   renderLineHighlight: "all", // Highlight whole line
                   renderWhitespace: "none",
@@ -593,7 +617,7 @@ export default function ProblemDetail() {
           </div>
 
           {/* Output */}
-          <div 
+          <div
             className={cn(
               "relative border-t border-border bg-background/60 transition-all overflow-hidden flex flex-col",
               !isResizingConsole && "transition-[height] duration-300",
@@ -603,12 +627,12 @@ export default function ProblemDetail() {
           >
             {/* Vertical Resize Handle */}
             {(result || running) && (
-              <div 
+              <div
                 onMouseDown={handleConsoleMouseDown}
                 className="absolute top-0 left-0 right-0 h-1 cursor-row-resize hover:bg-primary/40 transition-colors z-20"
               />
             )}
-            
+
             <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-border/40 shrink-0">
               <div className="font-mono text-[10px] uppercase tracking-widest text-primary font-bold">/ console</div>
               {(result || running) && (
@@ -630,11 +654,11 @@ export default function ProblemDetail() {
           </div>
         </div>
       </div>
-      
-      <AddToPlaylistDialog 
-        open={isPlaylistOpen} 
-        onOpenChange={setIsPlaylistOpen} 
-        problemId={problem.id} 
+
+      <AddToPlaylistDialog
+        open={isPlaylistOpen}
+        onOpenChange={setIsPlaylistOpen}
+        problemId={problem.id}
       />
     </div>
   );
@@ -643,10 +667,11 @@ export default function ProblemDetail() {
 function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
   const ok = sub.status?.toLowerCase().includes("accept");
   const tcs = sub.testCases || [];
-  const passed = tcs.filter((t) => t.passed).length;
-  
-  const examples = Array.isArray(problem.examples) 
-    ? problem.examples 
+  const passed = sub.passedCount ?? tcs.filter((t) => t.passed).length;
+  const total = sub.totalCount ?? tcs.length;
+
+  const examples = Array.isArray(problem.examples)
+    ? problem.examples
     : problem.examples ? Object.values(problem.examples) : [];
   const normalize = (s: any) => String(s ?? "")
     .replace(/\r\n/g, "\n")
@@ -679,12 +704,12 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
               </h3>
               <div className="flex items-center gap-3 mt-1">
                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                  {passed} / {tcs.length} Passed
+                  {passed} / {total} Passed
                 </p>
                 <div className="flex h-1.5 w-24 bg-muted rounded-full overflow-hidden border border-border/20">
-                  <div 
-                    className={cn("h-full transition-all duration-1000", ok ? "bg-easy shadow-[0_0_8px_rgba(var(--easy),0.5)]" : "bg-hard shadow-[0_0_8px_rgba(var(--hard),0.5)]")} 
-                    style={{ width: `${(passed / (tcs.length || 1)) * 100}%` }}
+                  <div
+                    className={cn("h-full transition-all duration-1000", ok ? "bg-easy shadow-[0_0_8px_rgba(var(--easy),0.5)]" : "bg-hard shadow-[0_0_8px_rgba(var(--hard),0.5)]")}
+                    style={{ width: `${(passed / (total || 1)) * 100}%` }}
                   />
                 </div>
               </div>
@@ -714,7 +739,7 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
       {/* Detailed Test Cases */}
       <div className="space-y-4">
         <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border/40 pb-2">Test Case Analysis</h4>
-        
+
         <div className="grid gap-3">
           {/* 1. Public Examples */}
           {tcs.filter(t => exampleInputs.has(normalize(t.stdin))).map((t, idx) => (
@@ -765,50 +790,75 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
 
           {/* 2. Hidden Cases Summary */}
           {(() => {
-            const hPassed = sub.hiddenPassedCount || 0;
-            const hFailed = sub.hiddenFailedCount || 0;
-            const totalH = sub.totalHiddenCases || (hPassed + hFailed);
-            
+            const hPassed = sub.hiddenPassedCount ?? 0;
+            const hFailed = sub.hiddenFailedCount ?? 0;
+            const totalH = sub.totalHiddenCases ?? (hPassed + hFailed);
+
             if (totalH === 0) return null;
 
             const hOk = hFailed === 0;
 
             return (
               <div className={cn(
-                "rounded-xl border p-5 transition-all shadow-sm",
-                hOk ? "bg-easy/5 border-easy/20 shadow-[0_0_15px_-5px_rgba(var(--easy),0.1)]" : "bg-hard/5 border-hard/20 shadow-[0_0_15px_-5px_rgba(var(--hard),0.1)]"
+                "rounded-xl border p-5 transition-all shadow-sm relative overflow-hidden",
+                hOk 
+                  ? "bg-easy/5 border-easy/20 shadow-[0_0_20px_-10px_rgba(var(--easy),0.2)]" 
+                  : "bg-hard/5 border-hard/20 shadow-[0_0_20px_-10px_rgba(var(--hard),0.2)]"
               )}>
-                <div className="flex items-center justify-between">
+                {/* Background Pattern */}
+                <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none">
+                  <ShieldCheck className="h-24 w-24" />
+                </div>
+
+                <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center gap-4">
                     <div className={cn(
-                      "p-3 rounded-2xl shadow-inner",
+                      "p-3 rounded-2xl shadow-inner animate-in zoom-in duration-500",
                       hOk ? "bg-easy/10 text-easy" : "bg-hard/10 text-hard"
                     )}>
-                      <ShieldAlert className="h-5 w-5" />
+                      {hOk ? <ShieldCheck className="h-6 w-6" /> : <ShieldAlert className="h-6 w-6" />}
                     </div>
                     <div>
-                      <h4 className="text-sm font-black uppercase tracking-tight">Hidden Test Cases</h4>
-                      <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
-                        {hOk ? "All private test cases passed." : "Some private test cases failed."}
+                      <h4 className="text-sm font-black uppercase tracking-tight">
+                        {hOk ? "All Private Cases Passed" : "Private Test Cases Summary"}
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground font-medium mt-0.5 max-w-[200px]">
+                        {hOk 
+                          ? "Your solution passed all secret validation tests." 
+                          : `${hFailed} hidden case${hFailed > 1 ? "s" : ""} failed. Review your logic for edge cases.`}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className={cn("text-xl font-black font-mono leading-none", hOk ? "text-easy" : "text-hard")}>
-                      {hPassed} / {totalH}
+                    <div className={cn(
+                      "text-2xl font-black font-mono leading-none tracking-tighter", 
+                      hOk ? "text-easy" : "text-hard"
+                    )}>
+                      {hPassed} <span className="text-xs text-muted-foreground font-medium mx-0.5">/</span> {totalH}
                     </div>
-                    <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mt-1">
+                    <div className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground mt-1.5 opacity-70">
                       Hidden Passed
                     </div>
                   </div>
                 </div>
-                
-                <div className="mt-5 h-2 w-full bg-muted/50 rounded-full overflow-hidden border border-border/10">
-                  <div 
-                    className={cn("h-full transition-all duration-1000", hOk ? "bg-easy shadow-[0_0_10px_rgba(var(--easy),0.4)]" : "bg-hard shadow-[0_0_10px_rgba(var(--hard),0.4)]")} 
-                    style={{ width: `${(hPassed / totalH) * 100}%` }}
-                  />
-                </div>
+
+                {!hOk && (
+                  <div className="mt-5 space-y-2">
+                    <div className="flex justify-between text-[10px] font-mono text-muted-foreground px-1">
+                      <span>Progress</span>
+                      <span>{Math.round((hPassed / totalH) * 100)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden border border-border/10">
+                      <div
+                        className={cn(
+                          "h-full transition-all duration-1000 ease-out", 
+                          "bg-hard shadow-[0_0_10px_rgba(var(--hard),0.4)]"
+                        )}
+                        style={{ width: `${(hPassed / totalH) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })()}
@@ -838,7 +888,7 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
     setIsSubmitting(true);
     try {
       const res = await discussApi.create({
-        title: "Discussion", 
+        title: "Discussion",
         content,
         problemId,
         type: "problem"
@@ -858,9 +908,9 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
     if (!user) { toast.error("Sign in to vote"); return; }
     try {
       const res = await discussApi.vote(id, type);
-      setDiscussions(discussions.map(d => d.id === id ? { 
-        ...d, 
-        upvotes: res.votes.upvotes, 
+      setDiscussions(discussions.map(d => d.id === id ? {
+        ...d,
+        upvotes: res.votes.upvotes,
         downvotes: res.votes.downvotes,
         userVote: d.userVote === type ? null : type
       } : d));
@@ -879,8 +929,8 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
             d.user?.id === user?.id ? "ml-auto items-end" : "mr-auto items-start"
           )}>
             <div className="flex items-center gap-2 mb-1">
-               <span className="text-[10px] font-bold text-muted-foreground">{d.user?.username || d.user?.name}</span>
-               <span className="text-[9px] text-muted-foreground/60">{new Date(d.createdAt).toLocaleTimeString()}</span>
+              <span className="text-[10px] font-bold text-muted-foreground">{d.user?.username || d.user?.name}</span>
+              <span className="text-[9px] text-muted-foreground/60">{new Date(d.createdAt).toLocaleTimeString()}</span>
             </div>
             <div className={cn(
               "px-3 py-2 rounded-2xl text-sm shadow-sm",
@@ -889,8 +939,8 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
               {d.content}
             </div>
             <div className="flex items-center gap-3 mt-1 transition-opacity text-muted-foreground/70">
-              <button 
-                onClick={() => handleVote(d.id, "UPVOTE")} 
+              <button
+                onClick={() => handleVote(d.id, "UPVOTE")}
                 className={cn(
                   "flex items-center gap-1 text-[10px] hover:text-primary transition-colors",
                   d.userVote === "UPVOTE" && "text-primary font-bold"
@@ -898,8 +948,8 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
               >
                 <ThumbsUp className="h-3 w-3" /> {d.upvotes}
               </button>
-              <button 
-                onClick={() => handleVote(d.id, "DOWNVOTE")} 
+              <button
+                onClick={() => handleVote(d.id, "DOWNVOTE")}
                 className={cn(
                   "flex items-center gap-1 text-[10px] hover:text-hard transition-colors",
                   d.userVote === "DOWNVOTE" && "text-hard font-bold"
@@ -912,10 +962,10 @@ function DiscussionPanel({ problemId, discussions, setDiscussions }: { problemId
         ))}
       </div>
       <div className="p-3 border-t bg-card/90 backdrop-blur-sm flex items-end gap-2 shrink-0">
-        <Textarea 
+        <Textarea
           ref={textareaRef}
-          placeholder="Type your message..." 
-          value={content} 
+          placeholder="Type your message..."
+          value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
