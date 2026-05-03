@@ -28,7 +28,8 @@ model User {
   longestStreak         Int                  @default(0)
   username              String?              @unique
   websiteUrl            String?
-  rating                Int                  @default(1200)
+  rating                Int                  @default(0)
+  contestsPlayed        Int                  @default(0)
   reputation            Int                  @default(0)
   Comment               Comment[]
   createdContests       Contest[]            @relation("CreatedContests")
@@ -149,6 +150,8 @@ model Submission {
   updatedAt     DateTime         @updatedAt
   problem       Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
   user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contestId     String?
+  contest       Contest?         @relation(fields: [contestId], references: [id], onDelete: SetNull)
   testCases     TestCaseResult[]
 }
 
@@ -227,6 +230,7 @@ model Contest {
   createdBy    User                 @relation("CreatedContests", fields: [createdById], references: [id], onDelete: Cascade)
   participants ContestParticipant[]
   problems     ContestProblem[]
+  submissions  Submission[]
 }
 
 model ContestProblem {
@@ -248,6 +252,9 @@ model ContestParticipant {
   contestId    String
   userId       String
   registeredAt DateTime @default(now())
+  rank         Int?
+  score        Float    @default(0)
+  ratingChange Int?
   contest      Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 

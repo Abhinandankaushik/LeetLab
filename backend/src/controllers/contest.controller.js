@@ -1,5 +1,26 @@
 import { db } from "../libs/db.js";
 
+// Helper to auto-update contest status based on time
+const updateContestStatus = async (contest) => {
+  const now = new Date();
+  const start = new Date(contest.startTime);
+  const end = new Date(contest.endTime);
+  
+  let newStatus = contest.status;
+  if (now < start) newStatus = "upcoming";
+  else if (now >= start && now <= end) newStatus = "live";
+  else newStatus = "ended";
+
+  if (newStatus !== contest.status) {
+    await db.contest.update({
+      where: { id: contest.id },
+      data: { status: newStatus }
+    });
+    return { ...contest, status: newStatus };
+  }
+  return contest;
+};
+
 export const createContest = async (req, res) => {
   try {
     const { name, description, startTime, endTime, problems } = req.body;
@@ -32,54 +53,143 @@ export const createContest = async (req, res) => {
 
 export const getContests = async (req, res) => {
   try {
+    const userId = req.user?.id;
     const contests = await db.contest.findMany({
       include: {
         _count: {
           select: { participants: true, problems: true },
         },
+        participants: userId ? {
+          where: { userId }
+        } : false
       },
       orderBy: { startTime: "desc" },
     });
-    res.status(200).json({ success: true, contests });
+
+    // Update statuses lazily and map results
+    const updatedContests = await Promise.all(contests.map(async (c) => {
+      const synced = await updateContestStatus(c);
+      return {
+        ...synced,
+        isRegistered: userId ? c.participants.length > 0 : false,
+        participantCount: synced._count?.participants || 0,
+        participants: undefined
+      };
+    }));
+
+    res.status(200).json({ success: true, contests: updatedContests });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-export const getContestBySlug = async (req, res) => {
+export const getContestById = async (req, res) => {
   try {
-    const { slug } = req.params;
+    const { id } = req.params;
+    const userId = req.user?.id;
+    console.log(`[GET /contests/${id}] Requested by user: ${userId || 'guest'}`);
+
     const contest = await db.contest.findUnique({
-      where: { slug },
+      where: { id },
       include: {
         problems: {
-          include: { problem: true },
+          include: {
+            problem: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                defficulty: true,
+                tags: true,
+                visibility: true,
+                examples: true,
+                codeSnippets: true,
+                constraints: true,
+              }
+            }
+          },
+          orderBy: { label: "asc" }
         },
         participants: {
-          include: { user: { select: { name: true, username: true } } },
+          where: userId ? { userId } : { userId: "none" },
+          select: { userId: true }
         },
+        _count: {
+          select: { participants: true }
+        }
       },
     });
 
     if (!contest) return res.status(404).json({ success: false, message: "Contest not found" });
 
-    const now = new Date();
-    const hasStarted = new Date(contest.startTime) <= now;
-    const isAdmin = req.user?.role === 'ADMIN';
-    const isRegistered = contest.participants.some(p => p.userId === req.user?.id);
-
-    // If contest hasn't started and not admin, hide problems
-    if (!hasStarted && !isAdmin) {
-      contest.problems = [];
-    } else if (!isAdmin) {
-      // If started but not admin, only show private problems if registered
-      contest.problems = contest.problems.filter(cp => {
-        if (cp.problem.visibility === 'PUBLIC') return true;
-        return isRegistered;
+    // Fetch user's successful submissions for this contest to show "Solved" status
+    let userSolvedProblemIds = new Set();
+    if (userId) {
+      const solvedSubmissions = await db.submission.findMany({
+        where: {
+          userId,
+          contestId: id,
+          status: "Accepted"
+        },
+        select: { problemId: true }
       });
+      userSolvedProblemIds = new Set(solvedSubmissions.map(s => s.problemId));
     }
 
-    res.status(200).json({ success: true, contest });
+    // Sync status
+    const syncedContest = await updateContestStatus(contest);
+    const now = new Date();
+    // Security: Controlled problem visibility
+    const isEnded = now > new Date(syncedContest.endTime);
+    const hasStarted = now >= new Date(syncedContest.startTime);
+    const isLive = hasStarted && !isEnded;
+    const isAdmin = req.user?.role === 'ADMIN';
+    const isRegistered = syncedContest.participants.length > 0;
+    
+    // Rule:
+    // 1. Admins see everything.
+    // 2. Registered users see everything while contest is LIVE or UPCOMING (upcoming is masked anyway).
+    // 3. After contest ENDS, private problems are masked for everyone except admins.
+    
+    let problems = syncedContest.problems;
+    problems = problems.map(cp => {
+      const isSolved = userSolvedProblemIds.has(cp.problem.id);
+      const isPrivate = cp.problem.visibility === "PRIVATE";
+      
+      // If it's private and the contest is over, only admins can see details
+      const shouldMask = !isAdmin && (
+        !isRegistered || 
+        !hasStarted || 
+        (isEnded && isPrivate)
+      );
+
+      if (shouldMask) {
+        return {
+          ...cp,
+          isSolved,
+          problem: {
+            id: cp.problem.id,
+            title: cp.problem.title,
+            defficulty: cp.problem.defficulty,
+            visibility: cp.problem.visibility,
+          }
+        };
+      }
+      return { ...cp, isSolved };
+    });
+
+    const responseData = {
+      ...syncedContest,
+      problems: problems,
+      isRegistered,
+      isLive,
+      hasStarted,
+      participantCount: syncedContest._count?.participants || 0,
+      participants: undefined, // Don't leak full participant list
+      _count: undefined
+    };
+
+    res.status(200).json({ success: true, contest: responseData });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -87,10 +197,10 @@ export const getContestBySlug = async (req, res) => {
 
 export const registerForContest = async (req, res) => {
   try {
-    const { slug } = req.params;
+    const { id } = req.params;
     const userId = req.user.id;
 
-    const contest = await db.contest.findUnique({ where: { slug } });
+    const contest = await db.contest.findUnique({ where: { id } });
     if (!contest) return res.status(404).json({ success: false, message: "Contest not found" });
 
     await db.contestParticipant.upsert({
@@ -113,12 +223,37 @@ export const registerForContest = async (req, res) => {
   }
 };
 
+export const unregisterFromContest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const contest = await db.contest.findUnique({ where: { id } });
+    if (!contest) return res.status(404).json({ success: false, message: "Contest not found" });
+
+    const result = await db.contestParticipant.deleteMany({
+      where: {
+        contestId: contest.id,
+        userId,
+      },
+    });
+
+    if (result.count === 0) {
+      return res.status(400).json({ success: false, message: "You are not registered for this contest" });
+    }
+
+    res.status(200).json({ success: true, message: "Unenrolled successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getContestStandings = async (req, res) => {
   try {
-    const { slug } = req.params;
+    const { id } = req.params;
 
     const contest = await db.contest.findUnique({
-      where: { slug },
+      where: { id },
       include: {
         problems: { include: { problem: true } },
         participants: {
@@ -186,6 +321,35 @@ export const getContestStandings = async (req, res) => {
       success: true,
       standings: standings.map((s, idx) => ({ ...s, rank: idx + 1 })),
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getMyContests = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const participations = await db.contestParticipant.findMany({
+      where: { userId },
+      include: {
+        contest: {
+          include: {
+            _count: {
+              select: { participants: true, problems: true },
+            },
+          },
+        },
+      },
+      orderBy: { contest: { startTime: "desc" } },
+    });
+
+    const contests = participations.map(p => ({
+      ...p.contest,
+      registeredAt: p.registeredAt,
+    }));
+
+    res.status(200).json({ success: true, contests });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

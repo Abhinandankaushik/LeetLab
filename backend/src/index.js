@@ -16,6 +16,7 @@ import leaderboardRoute from "./routes/leaderboard.routes.js";
 import contestRoute from "./routes/contest.routes.js";
 import analyticsRoute from "./routes/analytics.routes.js";
 import aiRoute from "./routes/ai.routes.js";
+import ratingRoute from "./routes/rating.routes.js";
 dotenv.config();
 
 const app = express();
@@ -42,6 +43,7 @@ app.use("/api/v1/leaderboard", leaderboardRoute)
 app.use("/api/v1/contests", contestRoute);
 app.use("/api/v1/analytics", analyticsRoute);
 app.use("/api/v1/ai", aiRoute);
+app.use("/api/v1/ratings", ratingRoute);
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);

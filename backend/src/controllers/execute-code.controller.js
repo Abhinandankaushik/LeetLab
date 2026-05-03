@@ -6,7 +6,7 @@ export const excutecode = async (req, res) => {
 
     try {
 
-        const { source_code, language_id, expected_outputs, stdin, problemId, isSubmit } = req.body;
+        const { source_code, language_id, expected_outputs, stdin, problemId, isSubmit, contestId } = req.body;
 
 
 
@@ -148,6 +148,7 @@ export const excutecode = async (req, res) => {
                 status: allPassed ? "Accepted" : "Wrong Answer",
                 memory: detailedResults.some((r) => r.memory) ? JSON.stringify(detailedResults.map((r) => r.memory)) : null,
                 time: detailedResults.some((r) => r.time) ? JSON.stringify(detailedResults.map((r) => r.time)) : null,
+                contestId: contestId || null,
             }
         });
 

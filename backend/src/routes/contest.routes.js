@@ -1,19 +1,23 @@
 import express from "express";
-import { authMiddleware } from "../middleware/auth.middleware.js";
+import { authMiddleware, optionalAuthMiddleware } from "../middleware/auth.middleware.js";
 import { 
   createContest, 
   getContests, 
-  getContestBySlug, 
+  getContestById, 
   registerForContest,
-  getContestStandings
+  unregisterFromContest,
+  getContestStandings,
+  getMyContests
 } from "../controllers/contest.controller.js";
 
 const router = express.Router();
 
 router.post("/", authMiddleware, createContest);
-router.get("/", getContests);
-router.get("/:slug", getContestBySlug);
-router.get("/:slug/standings", getContestStandings);
-router.post("/:slug/register", authMiddleware, registerForContest);
+router.get("/", optionalAuthMiddleware, getContests);
+router.get("/my", authMiddleware, getMyContests);
+router.get("/:id", optionalAuthMiddleware, getContestById);
+router.get("/:id/standings", getContestStandings);
+router.post("/:id/register", authMiddleware, registerForContest);
+router.post("/:id/unregister", authMiddleware, unregisterFromContest);
 
 export default router;
