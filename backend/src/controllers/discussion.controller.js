@@ -358,3 +358,22 @@ export const voteDiscussion = async (req, res) => {
         });
     }
 };
+
+export const deleteDiscussion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const discussion = await db.discussion.findUnique({ where: { id } });
+
+    if (!discussion) return res.status(404).json({ success: false, message: "Not found" });
+
+    // Admin or Owner can delete
+    if (req.user.role !== "ADMIN" && discussion.userId !== req.user.id) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+
+    await db.discussion.delete({ where: { id } });
+    res.status(200).json({ success: true, message: "Deleted" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

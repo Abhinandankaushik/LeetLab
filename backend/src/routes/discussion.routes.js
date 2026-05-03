@@ -4,7 +4,8 @@ import {
     getAllDiscussions, 
     getProblemDiscussions, 
     voteDiscussion,
-    getDiscussionById
+    getDiscussionById,
+    deleteDiscussion
 } from "../controllers/discussion.controller.js";
 import { authMiddleware, optionalAuthMiddleware } from "../middleware/auth.middleware.js";
 
@@ -15,5 +16,6 @@ router.get("/problem/:problemId", optionalAuthMiddleware, getProblemDiscussions)
 router.get("/:id", optionalAuthMiddleware, getDiscussionById);
 router.post("/create", authMiddleware, createDiscussion);
 router.post("/vote/:id", authMiddleware, voteDiscussion);
+router.delete("/:id", authMiddleware, deleteDiscussion);
 
 export default router;

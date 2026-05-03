@@ -1,5 +1,5 @@
 import express from "express"
-import { authMiddleware} from "../middleware/auth.middleware.js";
+import { authMiddleware, checkAdmin } from "../middleware/auth.middleware.js";
 import { getAllSubmission, getSubmissionByProblemId, getSubmissionCountByProblemId, getSubmissionDetailsById } from "../controllers/submission.controller.js";    
 
 const submissionRoute = express.Router();

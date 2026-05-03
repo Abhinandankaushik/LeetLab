@@ -314,10 +314,40 @@ export const getAdminAnalytics = async (_req, res) => {
       _count: { id: true }
     });
 
+    // 4. Popular Problems
+    const popularProblems = await db.submission.groupBy({
+      by: ["problemId"],
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+      take: 5
+    });
+
+    const problemTitles = await db.problem.findMany({
+      where: { id: { in: popularProblems.map(p => p.problemId) } },
+      select: { id: true, title: true }
+    });
+
+    const popularProblemsChart = popularProblems.map(p => ({
+      title: problemTitles.find(t => t.id === p.problemId)?.title || "Unknown",
+      count: p._count.id
+    }));
+
+    // 5. Contest Summary
+    const contestSummary = await db.contest.findMany({
+       select: {
+         id: true,
+         name: true,
+         status: true,
+         _count: { select: { participants: true } }
+       }
+    });
+
     return res.status(200).json({
       submissionChart,
       difficultyDist: difficultyDist.map(d => ({ name: d.defficulty, value: d._count.id })),
-      userGrowth: userGrowth.length
+      userGrowth: userGrowth.length,
+      popularProblems: popularProblemsChart,
+      contestSummary
     });
   } catch (error) {
     console.error("Analytics Error:", error);
