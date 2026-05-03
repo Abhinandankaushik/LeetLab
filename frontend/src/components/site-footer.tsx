@@ -20,8 +20,8 @@ export function SiteFooter() {
               </span>
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
-              Master your craft with the most immersive platform for technical interviews.
-              Built for the next generation of software engineers.
+              The elite coding playground built for the real ones. 
+              Master the grind, build your legacy, and stay ahead of the curve.
             </p>
             <div className="mt-6 flex items-center gap-4">
               <Button asChild variant="ghost" size="icon" className="h-9 w-9 rounded-full transition-all hover:bg-primary/10 hover:text-primary hover:shadow-[0_0_20px_var(--glow)]">
@@ -47,10 +47,10 @@ export function SiteFooter() {
             <div className="flex flex-col gap-4">
               <h3 className="font-display text-sm font-bold uppercase tracking-wider text-foreground/90">Platform</h3>
               <nav className="flex flex-col gap-2.5">
-                <FooterLink to="/problems">Problems</FooterLink>
-                <FooterLink to="/contests">Contests</FooterLink>
-                <FooterLink to="/leaderboard">Leaderboard</FooterLink>
-                <FooterLink to="/discuss">Discussions</FooterLink>
+                <FooterLink to="/problems">The Forge</FooterLink>
+                <FooterLink to="/contests">Arenas</FooterLink>
+                <FooterLink to="/leaderboard">Hall of Fame</FooterLink>
+                <FooterLink to="/discuss">The Den</FooterLink>
               </nav>
             </div>
             <div className="flex flex-col gap-4">

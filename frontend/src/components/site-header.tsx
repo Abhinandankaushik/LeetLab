@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Code2, LogOut, User as UserIcon, Settings, Trophy, MessageSquare,
-  ListChecks, Layers, Activity, Shield, Sparkles, ChevronDown, Home as HomeIcon, Menu, X
+  ListChecks, Layers, Activity, Shield, Sparkles, ChevronDown, Home as HomeIcon, Menu, X, History
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -131,6 +131,7 @@ export function SiteHeader() {
 
                     <div className="p-1">
                       <DropItem to="/profile" icon={UserIcon} onClick={() => setProfileOpen(false)}>My Profile</DropItem>
+                      <DropItem to="/contests/history" icon={History} onClick={() => setProfileOpen(false)}>Contest History</DropItem>
                       <DropItem to="/profile/edit" icon={Settings} onClick={() => setProfileOpen(false)}>Edit Profile</DropItem>
                     </div>
 

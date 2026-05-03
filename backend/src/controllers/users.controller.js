@@ -1,6 +1,6 @@
 import { db } from "../libs/db.js";
 
-const buildProfilePayload = async (userId) => {
+const buildProfilePayload = async (userId, isPublic = false) => {
   const user = await db.user.findUnique({
     where: { id: userId },
     select: {
@@ -29,6 +29,11 @@ const buildProfilePayload = async (userId) => {
     return null;
   }
 
+  if (isPublic) {
+    delete user.email;
+    delete user.role;
+  }
+
   const [
     totalSolved,
     totalSubmissions,
@@ -36,6 +41,11 @@ const buildProfilePayload = async (userId) => {
     solvedByDifficulty,
     recentSubmissions,
     tagStats,
+    allUsersCount,
+    userRank,
+    languageStats,
+    discussCount,
+    allRatings,
   ] = await Promise.all([
     db.problemSolved.count({ where: { userId } }),
     db.submission.count({ where: { userId } }),
@@ -52,7 +62,7 @@ const buildProfilePayload = async (userId) => {
     db.submission.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
-      take: 8,
+      take: isPublic ? 10 : 15,
       select: {
         id: true,
         status: true,
@@ -77,12 +87,42 @@ const buildProfilePayload = async (userId) => {
         tags: true,
       },
     }),
+    db.user.count(),
+    db.user.count({
+      where: {
+        rating: { gt: user.rating || 0 }
+      }
+    }),
+    db.submission.groupBy({
+      by: ["language"],
+      where: { userId, status: "Accepted" },
+      _count: { id: true }
+    }),
+    db.discussion.count({ where: { userId } }),
+    db.user.findMany({ select: { rating: true } })
   ]);
+
+  // Generate distribution for percentile chart (dynamic)
+  const distribution = new Array(20).fill(0);
+  const maxRating = Math.max(...allRatings.map(r => r.rating), 3000);
+  allRatings.forEach(r => {
+    const bucket = Math.min(19, Math.floor((r.rating / maxRating) * 20));
+    distribution[bucket]++;
+  });
 
   const difficultyStats = { EASY: 0, MEDIUM: 0, HARD: 0 };
   solvedByDifficulty.forEach((item) => {
     difficultyStats[item.defficulty] = item._count.id;
   });
+
+  const totalProblems = await db.problem.count({ where: { visibility: "PUBLIC" } });
+  const diffTotal = await db.problem.groupBy({
+    by: ["defficulty"],
+    where: { visibility: "PUBLIC" },
+    _count: { id: true }
+  });
+  const totalByDiff = { EASY: 0, MEDIUM: 0, HARD: 0 };
+  diffTotal.forEach(d => totalByDiff[d.defficulty] = d._count.id);
 
   const tagCount = new Map();
   tagStats.forEach((item) => {
@@ -93,11 +133,21 @@ const buildProfilePayload = async (userId) => {
 
   const normalizedTagStats = Array.from(tagCount.entries())
     .map(([tag, solved]) => ({ tag, solved }))
-    .sort((a, b) => b.solved - a.solved)
-    .slice(0, 12);
+    .sort((a, b) => b.solved - a.solved);
 
-  const acceptanceRate =
-    totalSubmissions > 0 ? Number(((acceptedSubmissions / totalSubmissions) * 100).toFixed(2)) : 0;
+  const skills = {
+    advanced: normalizedTagStats.filter(s => s.solved >= 15).slice(0, 5),
+    intermediate: normalizedTagStats.filter(s => s.solved >= 5 && s.solved < 15).slice(0, 5),
+    fundamental: normalizedTagStats.filter(s => s.solved < 5).slice(0, 5)
+  };
+
+  const languages = languageStats.map(l => ({
+    name: l.language,
+    count: l._count.id
+  })).sort((a, b) => b.count - a.count);
+
+  const percentile = allUsersCount > 0 ? Number(((userRank / allUsersCount) * 100).toFixed(1)) : 100;
+  const acceptanceRate = totalSubmissions > 0 ? Number(((acceptedSubmissions / totalSubmissions) * 100).toFixed(2)) : 0;
 
   const badges = [];
   if (totalSolved >= 25) badges.push({ key: "starter", label: "Starter", tone: "easy" });
@@ -118,28 +168,47 @@ const buildProfilePayload = async (userId) => {
   });
 
   const activeDays = Object.keys(heatmap).length;
+  const startYear = new Date(user.createdAt).getFullYear();
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = currentYear; y >= startYear; y--) years.push(y);
 
   return {
     user,
     badges,
     stats: {
       totalSolved,
+      totalProblems,
+      totalByDiff,
       totalSubmissions,
       acceptedSubmissions,
       acceptanceRate,
       difficultyStats,
       activeDays,
+      rank: userRank + 1,
+      allUsersCount,
+      percentile: 100 - percentile,
+      following: 0,
+      followers: 0,
+      views: 0, // Would need a separate table/field in real app
+      solutions: totalSolved,
+      discuss: discussCount,
+      reputation: user.reputation || 0,
+      distribution
     },
-    tagStats: normalizedTagStats,
+    languages,
+    skills,
+    tagStats: normalizedTagStats.slice(0, 12),
     recentSubmissions,
     activityHeatmap: heatmap,
     activityKeys: Object.keys(heatmap),
+    availableYears: years
   };
 };
 
 export const getMeProfile = async (req, res) => {
   try {
-    const profile = await buildProfilePayload(req.user.id);
+    const profile = await buildProfilePayload(req.user.id, false);
     return res.status(200).json(profile);
   } catch (error) {
     return res.status(500).json({ message: "Failed to fetch profile", error: String(error) });
@@ -161,7 +230,7 @@ export const getPublicProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const profile = await buildProfilePayload(user.id);
+    const profile = await buildProfilePayload(user.id, true);
     return res.status(200).json(profile);
   } catch (error) {
     return res.status(500).json({ message: "Failed to fetch public profile", error: String(error) });

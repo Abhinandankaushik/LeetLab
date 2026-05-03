@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
@@ -34,6 +34,9 @@ import Submissions from "@/routes/submissions";
 import UserProfile from "@/routes/u.$username";
 import Terms from "@/routes/terms";
 import Privacy from "@/routes/privacy";
+import ContestWorkspace from "@/routes/contests.$slug.workspace";
+import ContestStandings from "@/routes/contests.$id.standings";
+import ContestHistory from "@/routes/contests.history";
 import NotFound from "@/routes/not-found";
 
 const queryClient = new QueryClient({
@@ -57,6 +60,9 @@ const themeInit = `
 `;
 
 function App() {
+  const location = useLocation();
+  const isWorkspace = location.pathname.includes("/workspace") || location.pathname.includes("/problems/");
+
   React.useEffect(() => {
     const script = document.createElement("script");
     script.innerHTML = themeInit;
@@ -70,7 +76,7 @@ function App() {
           <div className="relative z-10 flex min-h-screen flex-col">
             <InteractiveBackground />
             <ScrollProgress />
-            <SiteHeader />
+            {!isWorkspace && <SiteHeader />}
             <main className="flex-1">
               <PageTransition>
                 <Routes>
@@ -81,7 +87,11 @@ function App() {
                   <Route path="/admin/problems/ai" element={<AdminAIProblem />} />
                   <Route path="/admin/contests/new" element={<AdminContestsNew />} />
                   <Route path="/contests" element={<Contests />} />
-                  <Route path="/contests/:slug" element={<ContestsDetail />} />
+                  <Route path="/contests/history" element={<ContestHistory />} />
+                  <Route path="/contests/:id" element={<ContestsDetail />} />
+                  <Route path="/contests/:id/standings" element={<ContestStandings />} />
+                  <Route path="/contests/:id/workspace" element={<ContestWorkspace />} />
+                  <Route path="/contests/:id/workspace/:problemId" element={<ContestWorkspace />} />
                   <Route path="/discuss" element={<Discuss />} />
                   <Route path="/discuss/:postId" element={<DiscussPost />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />

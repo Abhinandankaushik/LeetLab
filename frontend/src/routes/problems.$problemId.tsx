@@ -14,7 +14,7 @@ import { DifficultyBadge } from "@/components/difficulty-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AICodePanel } from "@/components/ai-code-panel";
 import { EditorToolbar } from "@/components/EditorToolbar";
-import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Send, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Send, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Bookmark } from "lucide-react";
@@ -273,178 +273,188 @@ export default function ProblemDetail() {
   return (
     <div className={cn(
       "flex flex-col bg-background",
-      isFullscreen ? "fixed inset-0 z-50 h-screen w-screen" : "min-h-[calc(100vh-3.5rem)] h-[calc(100vh-3.5rem)]"
+      isFullscreen ? "fixed inset-0 z-50 h-screen w-screen" : "min-h-screen h-screen"
     )}>
       <div className={cn(
-        "flex-1 flex relative",
+        "flex-1 flex relative bg-[#0a0a0a]",
         isMobile ? "flex-col overflow-y-auto overflow-x-hidden" : "flex-row overflow-hidden"
       )}>
+        {/* Workspace Background Grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+        
         {/* Left: description - Hidden in Fullscreen */}
         {!isFullscreen && (
           <>
             <div
               className={cn(
-                "bg-background shrink-0",
+                "bg-background/40 backdrop-blur-sm shrink-0 flex flex-col",
                 !isDragging && "transition-all duration-300",
-                isMobile ? "w-full border-b border-border" : "border-r border-border h-full overflow-y-auto scrollbar-thin"
+                isMobile ? "w-full border-b border-border" : "border-r border-border h-full overflow-hidden"
               )}
               style={isMobile ? {} : { width: `${100 - editorSettings.editorWidth}%` }}
             >
-              <div className={cn("p-4 md:p-6")}>
-                <Link to="/problems" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                  <ArrowLeft className="h-3 w-3" /> All problems
-                </Link>
-                <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight">{problem.title}</h1>
-                    <DifficultyBadge value={problem.defficulty} />
+              <div className={cn("p-4 md:p-6 flex-1 flex flex-col overflow-hidden")}>
+                <div className="shrink-0">
+                  <Link to="/problems" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors group">
+                    <ArrowLeft className="h-3 w-3 group-hover:-translate-x-0.5 transition-transform" /> All problems
+                  </Link>
+                  <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight text-white">{problem.title}</h1>
+                      <DifficultyBadge value={problem.defficulty} />
+                    </div>
+                    <Button
+                      variant={isProblemSaved ? "secondary" : "outline"}
+                      size="sm"
+                      className={cn(
+                        "flex items-center gap-2 h-8 w-fit shrink-0 transition-all duration-300",
+                        isProblemSaved && "bg-primary/20 border-primary/30 text-primary hover:bg-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.1)]"
+                      )}
+                      onClick={() => setIsPlaylistOpen(true)}
+                    >
+                      <Bookmark className={cn("h-4 w-4", isProblemSaved && "fill-current")} />
+                      {isProblemSaved ? "Saved" : "Save"}
+                    </Button>
                   </div>
-                  <Button
-                    variant={isProblemSaved ? "secondary" : "outline"}
-                    size="sm"
-                    className={cn(
-                      "flex items-center gap-2 h-8 w-fit shrink-0 transition-all duration-300",
-                      isProblemSaved && "bg-primary/20 border-primary/30 text-primary hover:bg-primary/30 shadow-[0_0_10px_rgba(var(--primary),0.1)]"
-                    )}
-                    onClick={() => setIsPlaylistOpen(true)}
-                  >
-                    <Bookmark className={cn("h-4 w-4", isProblemSaved && "fill-current")} />
-                    {isProblemSaved ? "Saved" : "Save"}
-                  </Button>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {problem.tags?.map((t) => (
-                    <span key={t} className="rounded bg-muted px-2 py-0.5 font-mono text-[10px] text-muted-foreground border border-border/40">{t}</span>
-                  ))}
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {problem.tags?.map((t) => (
+                      <span key={t} className="rounded bg-muted/40 px-2 py-0.5 font-mono text-[10px] text-muted-foreground border border-border/40">{t}</span>
+                    ))}
+                  </div>
                 </div>
 
-                <Tabs defaultValue="desc" className="mt-6">
-                  <TabsList className="w-full justify-start h-10 bg-muted/20 p-1 overflow-x-auto overflow-y-hidden scrollbar-none flex-nowrap shrink-0">
-                    <TabsTrigger value="desc" className="text-[11px] md:text-xs min-w-fit">Description</TabsTrigger>
-                    <TabsTrigger value="examples" className="text-[11px] md:text-xs min-w-fit">Examples</TabsTrigger>
-                    <TabsTrigger value="hints" className="text-[11px] md:text-xs min-w-fit">Hints</TabsTrigger>
-                    <TabsTrigger value="ai" className="text-[11px] md:text-xs min-w-fit">AI</TabsTrigger>
-                    <TabsTrigger value="subs" className="text-[11px] md:text-xs min-w-fit">Submissions</TabsTrigger>
-                    <TabsTrigger value="discuss" className="text-[11px] md:text-xs min-w-fit">Discuss</TabsTrigger>
+                <Tabs defaultValue="desc" className="mt-6 flex-1 flex flex-col overflow-hidden">
+                  <TabsList className="w-full justify-start h-10 bg-muted/20 p-1 overflow-x-auto overflow-y-hidden scrollbar-none flex-nowrap shrink-0 border border-border/40 rounded-xl">
+                    <TabsTrigger value="desc" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Description</TabsTrigger>
+                    <TabsTrigger value="examples" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Examples</TabsTrigger>
+                    <TabsTrigger value="hints" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Hints</TabsTrigger>
+                    <TabsTrigger value="ai" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">AI</TabsTrigger>
+                    <TabsTrigger value="subs" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Submissions</TabsTrigger>
+                    <TabsTrigger value="discuss" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Discuss</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="ai" className="mt-4 animate-in fade-in duration-300">
-                    <AICodePanel
-                      code={code}
-                      language={lang.key}
-                      problemTitle={problem.title}
-                      problemDescription={problem.description}
-                    />
-                  </TabsContent>
+                  <div className="flex-1 overflow-y-auto mt-4 scrollbar-thin pr-2">
+                    <TabsContent value="ai" className="mt-0 animate-in fade-in duration-300">
+                      <AICodePanel
+                        code={code}
+                        language={lang.key}
+                        problemTitle={problem.title}
+                        problemDescription={problem.description}
+                      />
+                    </TabsContent>
 
-                  <TabsContent value="desc" className="mt-4 space-y-6 animate-in fade-in duration-300">
-                    <div className="prose max-w-none whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 font-sans">
-                      {problem.description}
-                    </div>
-                    {problem.constraints && (
-                      <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-                        <h3 className="font-display text-xs font-semibold uppercase tracking-widest text-primary">Constraints</h3>
-                        <pre className="mt-2 whitespace-pre-wrap font-mono text-xs leading-relaxed">{problem.constraints}</pre>
+                    <TabsContent value="desc" className="mt-0 space-y-6 animate-in fade-in duration-300">
+                      <div className="prose max-w-none whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 font-sans">
+                        {problem.description}
                       </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="examples" className="mt-4 space-y-4 animate-in fade-in duration-300">
-                    {examples.length === 0 && <p className="text-sm text-muted-foreground">No examples provided.</p>}
-                    {examples.map((ex, i) => (
-                      <div key={i} className="rounded-xl border border-border bg-card p-4 shadow-sm">
-                        <div className="font-mono text-[10px] uppercase tracking-widest text-primary font-bold">Example {i + 1}</div>
-                        <div className="mt-3 space-y-2 text-sm">
-                          {ex.input !== undefined && (
-                            <div className="flex gap-2">
-                              <span className="font-semibold text-muted-foreground shrink-0 w-12">Input:</span>
-                              <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">{String(ex.input) || "none"}</code>
-                            </div>
-                          )}
-                          {ex.output !== undefined && (
-                            <div className="flex gap-2">
-                              <span className="font-semibold text-muted-foreground shrink-0 w-12">Output:</span>
-                              <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">{String(ex.output)}</code>
-                            </div>
-                          )}
-                          {ex.explanation && (
-                            <div className="mt-2 text-muted-foreground text-xs italic border-l-2 border-primary/20 pl-3">
-                              {ex.explanation}
-                            </div>
-                          )}
+                      {problem.constraints && (
+                        <div className="rounded-xl border border-border/60 bg-muted/10 p-4 backdrop-blur-sm">
+                          <h3 className="font-display text-xs font-semibold uppercase tracking-widest text-primary">Constraints</h3>
+                          <pre className="mt-2 whitespace-pre-wrap font-mono text-xs leading-relaxed text-muted-foreground">{problem.constraints}</pre>
                         </div>
+                      )}
+                      
+                      {/* Placeholder for future detailed stats or info to fill space */}
+                      <div className="pt-10 pb-20 opacity-20 flex flex-col items-center gap-4 select-none">
+                         <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-border to-transparent" />
+                         <span className="text-[10px] font-mono uppercase tracking-[0.3em]">End of Documentation</span>
                       </div>
-                    ))}
-                  </TabsContent>
+                    </TabsContent>
 
-                  <TabsContent value="hints" className="mt-4 space-y-4 animate-in fade-in duration-300">
-                    {problem.hints ? (
-                      <div className="rounded-xl border border-border bg-card p-4">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Hints</h3>
-                        <div className="whitespace-pre-wrap text-sm text-foreground/80">{problem.hints}</div>
-                      </div>
-                    ) : <p className="text-sm text-muted-foreground italic text-center py-8">No hints — you've got this.</p>}
-                    {problem.editorial && (
-                      <div className="rounded-xl border border-border bg-primary/5 p-4">
-                        <h3 className="font-display text-xs font-semibold uppercase tracking-widest text-primary">Editorial</h3>
-                        <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{problem.editorial}</div>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="subs" className="mt-4 animate-in fade-in duration-300">
-                    {!user && <p className="text-sm text-muted-foreground">Sign in to view your submissions.</p>}
-                    {user && submissions.length === 0 && <p className="text-sm text-muted-foreground">No submissions yet.</p>}
-                    <div className="space-y-2">
-                      {submissions.map((s) => {
-                        const ok = s.status?.toLowerCase().includes("accept");
-                        return (
-                          <div
-                            key={s.id}
-                            onClick={async () => {
-                              try {
-                                const { submission: fullSub } = await submissionsApi.get(s.id);
-                                setResult(fullSub);
-                                // Auto-open console if it was closed
-                                if (consoleHeight < 15) {
-                                  setConsoleHeight(40);
-                                }
-                                toast.info(`Viewing submission from ${new Date(s.createdAt!).toLocaleTimeString()}`);
-                              } catch (err: any) {
-                                toast.error("Failed to load submission details");
-                              }
-                            }}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border bg-card p-3 text-sm hover:border-primary/30 transition-colors cursor-pointer group gap-3"
-                          >
-                            <div className="flex items-center justify-between sm:justify-start gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
-                                {ok ? <CheckCircle2 className="h-4 w-4 text-easy shrink-0" /> : <XCircle className="h-4 w-4 text-hard shrink-0" />}
-                                <span className={cn("font-bold truncate", ok ? "text-easy" : "text-hard")}>{s.status}</span>
+                    <TabsContent value="examples" className="mt-0 space-y-4 animate-in fade-in duration-300">
+                      {examples.length === 0 && <p className="text-sm text-muted-foreground">No examples provided.</p>}
+                      {examples.map((ex, i) => (
+                        <div key={i} className="rounded-xl border border-border bg-card/40 p-4 shadow-sm backdrop-blur-sm">
+                          <div className="font-mono text-[10px] uppercase tracking-widest text-primary font-bold">Example {i + 1}</div>
+                          <div className="mt-3 space-y-2 text-sm">
+                            {ex.input !== undefined && (
+                              <div className="flex gap-2">
+                                <span className="font-semibold text-muted-foreground shrink-0 w-12">Input:</span>
+                                <code className="font-mono bg-muted/40 px-1.5 py-0.5 rounded text-xs">{String(ex.input) || "none"}</code>
                               </div>
-                              <span className="font-mono text-[9px] md:text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground uppercase shrink-0">{s.language}</span>
-                            </div>
-                            <div className="flex items-center justify-between sm:justify-end gap-3 font-mono text-[10px] text-muted-foreground border-t sm:border-0 pt-2 sm:pt-0">
-                              <div className="flex items-center gap-3">
-                                {s.time && <span className="hidden xs:inline">{formatStat(s.time)}</span>}
-                                {s.memory && <span className="hidden xs:inline">{formatStat(s.memory)}</span>}
-                                <span className="text-[9px] bg-muted/40 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                  {new Date(s.createdAt).toLocaleDateString()} {new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
+                            )}
+                            {ex.output !== undefined && (
+                              <div className="flex gap-2">
+                                <span className="font-semibold text-muted-foreground shrink-0 w-12">Output:</span>
+                                <code className="font-mono bg-muted/40 px-1.5 py-0.5 rounded text-xs">{String(ex.output)}</code>
                               </div>
-                              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-primary font-bold text-[9px] sm:text-[10px] shrink-0">VIEW →</span>
-                            </div>
+                            )}
+                            {ex.explanation && (
+                              <div className="mt-2 text-muted-foreground text-xs italic border-l-2 border-primary/20 pl-3">
+                                {ex.explanation}
+                              </div>
+                            )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="discuss" className="mt-4 animate-in fade-in duration-300">
-                    <DiscussionPanel
-                      problemId={problemId!}
-                      discussion={unifiedDiscussion}
-                      setDiscussion={setUnifiedDiscussion}
-                    />
-                  </TabsContent>
+                        </div>
+                      ))}
+                    </TabsContent>
+
+                    <TabsContent value="hints" className="mt-0 space-y-4 animate-in fade-in duration-300">
+                      {problem.hints ? (
+                        <div className="rounded-xl border border-border bg-card/40 p-4 backdrop-blur-sm">
+                          <h3 className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Hints</h3>
+                          <div className="whitespace-pre-wrap text-sm text-foreground/80">{problem.hints}</div>
+                        </div>
+                      ) : <p className="text-sm text-muted-foreground italic text-center py-8">No hints — you've got this.</p>}
+                      {problem.editorial && (
+                        <div className="rounded-xl border border-border bg-primary/5 p-4 backdrop-blur-sm">
+                          <h3 className="font-display text-xs font-semibold uppercase tracking-widest text-primary">Editorial</h3>
+                          <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{problem.editorial}</div>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="subs" className="mt-0 animate-in fade-in duration-300">
+                      {!user && <p className="text-sm text-muted-foreground">Sign in to view your submissions.</p>}
+                      {user && submissions.length === 0 && <p className="text-sm text-muted-foreground">No submissions yet.</p>}
+                      <div className="space-y-2">
+                        {submissions.map((s) => {
+                          const ok = s.status?.toLowerCase().includes("accept");
+                          return (
+                            <div
+                              key={s.id}
+                              onClick={async () => {
+                                try {
+                                  const { submission: fullSub } = await submissionsApi.get(s.id);
+                                  setResult(fullSub);
+                                  if (consoleHeight < 15) setConsoleHeight(40);
+                                  toast.info(`Viewing submission from ${new Date(s.createdAt!).toLocaleTimeString()}`);
+                                } catch (err: any) {
+                                  toast.error("Failed to load submission details");
+                                }
+                              }}
+                              className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border bg-card/40 p-3 text-sm hover:border-primary/30 transition-colors cursor-pointer group gap-3 backdrop-blur-sm"
+                            >
+                              <div className="flex items-center justify-between sm:justify-start gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {ok ? <CheckCircle2 className="h-4 w-4 text-easy shrink-0" /> : <XCircle className="h-4 w-4 text-hard shrink-0" />}
+                                  <span className={cn("font-bold truncate", ok ? "text-easy" : "text-hard")}>{s.status}</span>
+                                </div>
+                                <span className="font-mono text-[9px] md:text-[10px] bg-muted/60 px-1.5 py-0.5 rounded text-muted-foreground uppercase shrink-0">{s.language}</span>
+                              </div>
+                              <div className="flex items-center justify-between sm:justify-end gap-3 font-mono text-[10px] text-muted-foreground border-t sm:border-0 pt-2 sm:pt-0">
+                                <div className="flex items-center gap-3">
+                                  {s.time && <span className="hidden xs:inline">{formatStat(s.time)}</span>}
+                                  {s.memory && <span className="hidden xs:inline">{formatStat(s.memory)}</span>}
+                                  <span className="text-[9px] bg-muted/40 px-1.5 py-0.5 rounded whitespace-nowrap">
+                                    {new Date(s.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <span className="opacity-0 group-hover:opacity-100 transition-opacity text-primary font-bold text-[9px] sm:text-[10px] shrink-0">VIEW →</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="discuss" className="mt-0 animate-in fade-in duration-300">
+                      <DiscussionPanel
+                        problemId={problemId!}
+                        discussion={unifiedDiscussion}
+                        setDiscussion={setUnifiedDiscussion}
+                      />
+                    </TabsContent>
+                  </div>
                 </Tabs>
               </div>
             </div>
@@ -618,10 +628,9 @@ export default function ProblemDetail() {
             </div>
           </div>
 
-          {/* Output */}
           <div
             className={cn(
-              "relative border-t border-border bg-background/60 transition-all overflow-hidden flex flex-col",
+              "relative border-t border-border bg-background/80 backdrop-blur-xl transition-all overflow-hidden flex flex-col shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.3)]",
               !isResizingConsole && "transition-[height] duration-300",
               result || running ? "" : "h-12"
             )}
@@ -936,6 +945,20 @@ function DiscussionPanel({ problemId, discussion, setDiscussion }: { problemId: 
     }
   };
 
+  const handleDeleteMessage = async (id: string) => {
+    if (!confirm("Vanish this signal?")) return;
+    try {
+      await discussApi.removeComment(id);
+      setDiscussion({
+        ...discussion,
+        comments: messages.filter((m: any) => m.id !== id)
+      });
+      toast.success("Signal purged");
+    } catch (err: any) {
+      toast.error("Purge failed");
+    }
+  };
+
   return (
     <div className="flex flex-col h-[400px] border rounded-xl overflow-hidden bg-muted/5 mb-8 shadow-inner">
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
@@ -974,6 +997,14 @@ function DiscussionPanel({ problemId, discussion, setDiscussion }: { problemId: 
               >
                 <ThumbsDown className="h-3 w-3" /> {m.downvotes}
               </button>
+              {user?.role === "ADMIN" && (
+                <button
+                  onClick={() => handleDeleteMessage(m.id)}
+                  className="flex items-center gap-1 text-[10px] text-hard hover:text-hard/80 opacity-0 group-hover:opacity-100 transition-all ml-auto"
+                >
+                  <Trash2 className="h-2.5 w-2.5" />
+                </button>
+              )}
             </div>
           </div>
         ))}

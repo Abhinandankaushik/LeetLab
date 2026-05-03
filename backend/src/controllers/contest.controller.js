@@ -89,8 +89,10 @@ export const getContestById = async (req, res) => {
     const userId = req.user?.id;
     console.log(`[GET /contests/${id}] Requested by user: ${userId || 'guest'}`);
 
-    const contest = await db.contest.findUnique({
-      where: { id },
+    const contest = await db.contest.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }]
+      },
       include: {
         problems: {
           include: {
@@ -128,7 +130,7 @@ export const getContestById = async (req, res) => {
       const solvedSubmissions = await db.submission.findMany({
         where: {
           userId,
-          contestId: id,
+          contestId: contest.id,
           status: "Accepted"
         },
         select: { problemId: true }
@@ -200,7 +202,7 @@ export const registerForContest = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const contest = await db.contest.findUnique({ where: { id } });
+    const contest = await db.contest.findFirst({ where: { OR: [{ id }, { slug: id }] } });
     if (!contest) return res.status(404).json({ success: false, message: "Contest not found" });
 
     await db.contestParticipant.upsert({
@@ -228,7 +230,7 @@ export const unregisterFromContest = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const contest = await db.contest.findUnique({ where: { id } });
+    const contest = await db.contest.findFirst({ where: { OR: [{ id }, { slug: id }] } });
     if (!contest) return res.status(404).json({ success: false, message: "Contest not found" });
 
     const result = await db.contestParticipant.deleteMany({
@@ -252,8 +254,10 @@ export const getContestStandings = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const contest = await db.contest.findUnique({
-      where: { id },
+    const contest = await db.contest.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }]
+      },
       include: {
         problems: { include: { problem: true } },
         participants: {

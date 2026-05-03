@@ -235,7 +235,6 @@ export default function CreateProblemForm({ problemId }: CreateProblemFormProps)
     } else {
       toast.error("Please check the form for errors");
     }
-    console.log("Form Validation Errors:", errors);
   };
 
   return (

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { discussApi, type DiscussPost } from "@/lib/api";
 import { 
-  MessageSquare, ArrowUp, Eye, Pin, Search, Plus, 
+  MessageSquare, ArrowUp, Eye, Pin, Search, Plus, Trash2,
   Tag, Loader2, Send, Filter, Clock, TrendingUp, Sparkles, User 
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -119,6 +119,23 @@ export default function DiscussPage() {
 }
 
 function PostCard({ post }: { post: DiscussPost }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this discussion?")) return;
+
+    try {
+      await discussApi.remove(post.id);
+      toast.success("Discussion purged.");
+      qc.invalidateQueries({ queryKey: ["discuss"] });
+    } catch (err) {
+      toast.error("Failed to purge discussion.");
+    }
+  };
+
   const typeColors: Record<string, string> = {
     question: "bg-orange-500/10 text-orange-500 border-orange-500/20",
     editorial: "bg-easy/10 text-easy border-easy/20",
@@ -127,9 +144,10 @@ function PostCard({ post }: { post: DiscussPost }) {
   };
 
   return (
+    <div className="group relative">
     <Link
       to={`/discuss/${post.id}`}
-      className="group relative flex flex-col rounded-3xl border border-border bg-card/40 p-6 backdrop-blur-sm transition-all hover:bg-card hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/5 hover-lift overflow-hidden"
+      className="flex flex-col rounded-3xl border border-border bg-card/40 p-6 backdrop-blur-sm transition-all hover:bg-card hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/5 hover-lift overflow-hidden"
     >
       {post.isPinned && (
         <div className="absolute top-0 right-0 p-3">
@@ -172,6 +190,15 @@ function PostCard({ post }: { post: DiscussPost }) {
         </div>
       </div>
     </Link>
+    {user?.role === "ADMIN" && (
+      <button 
+        onClick={handleDelete}
+        className="absolute top-4 right-4 p-2 rounded-xl bg-hard/10 text-hard opacity-0 group-hover:opacity-100 transition-all hover:bg-hard hover:text-hard-foreground z-20"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+    )}
+    </div>
   );
 }
 

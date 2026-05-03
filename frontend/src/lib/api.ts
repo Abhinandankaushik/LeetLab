@@ -53,6 +53,7 @@ export interface User {
   image?: string | null;
   role: UserRole;
   rating?: number;
+  contestsPlayed?: number;
   reputation?: number;
   currentStreak?: number;
   longestStreak?: number;
@@ -140,6 +141,7 @@ export interface Contest {
   ratingFloor?: number;
   ratingCeil?: number;
   participantCount?: number;
+  isRegistered?: boolean;
   problems?: ContestProblem[];
 }
 
@@ -216,11 +218,16 @@ export const executeApi = {
     stdin: string[];
     expected_outputs: string[];
     problemId: string;
+    isSubmit?: boolean;
+    contestId?: string;
   }) => api.post<{ message: string; submission?: Submission }>("/execute-code", data),
 };
 
 export const submissionsApi = {
-  all: () => api.get<{ submissions: Submission[] }>("/submissions/get-all-submissions"),
+  all: (page = 1, limit = 20) => 
+    api.get<{ submissions: Submission[]; pagination: { total: number; page: number; limit: number; totalPages: number } }>(
+      `/submissions/get-all-submissions?page=${page}&limit=${limit}`
+    ),
   byProblem: (problemId: string) =>
     api.get<{ submissions: Submission[] }>(`/submissions/get-submissions/${problemId}`),
   countByProblem: (problemId: string) =>
@@ -241,9 +248,9 @@ export const playlistsApi = {
 
 async function safeGet<T>(path: string, fallback: T): Promise<T> {
   try { return await api.get<T>(path); }
-  catch (e: any) {
-    if (e instanceof ApiError && (e.status === 404 || e.status === 501)) return fallback;
-    throw e;
+  catch (e) { 
+    console.error(`API Error at ${path}:`, e);
+    return fallback; 
   }
 }
 async function safePost<T>(path: string, body: any, fallback: T): Promise<T> {
@@ -256,10 +263,13 @@ async function safePost<T>(path: string, body: any, fallback: T): Promise<T> {
 
 export const contestsApi = {
   all: () => safeGet<{ contests: Contest[] }>("/contests", { contests: [] }),
-  get: (slug: string) => safeGet<{ contest: Contest | null }>(`/contests/${slug}`, { contest: null }),
-  register: (slug: string) => api.post(`/contests/${slug}/register`),
-  standings: (slug: string) => safeGet<{ standings: any[] }>(`/contests/${slug}/standings`, { standings: [] }),
+  my: () => safeGet<{ contests: Contest[] }>("/contests/my", { contests: [] }),
+  get: (id: string) => safeGet<{ contest: (Contest & { isRegistered?: boolean }) | null }>(`/contests/${id}`, { contest: null }),
+  register: (id: string) => api.post(`/contests/${id}/register`),
+  unregister: (id: string) => api.post(`/contests/${id}/unregister`),
+  standings: (id: string) => safeGet<{ standings: any[] }>(`/contests/${id}/standings`, { standings: [] }),
   create: (data: Partial<Contest>) => safePost("/contests", data, { ok: false }),
+  update: (id: string, data: Partial<Contest>) => api.put(`/contests/${id}`, data),
 };
 
 export const discussApi = {
@@ -278,6 +288,7 @@ export const discussApi = {
   vote: (id: string, type: "UPVOTE" | "DOWNVOTE") =>
     api.post<{ votes: { upvotes: number; downvotes: number } }>(`/discussions/vote/${id}`, { type }),
   get: (id: string) => api.get<{ discussion: DiscussPost }>(`/discussions/${id}`),
+  remove: (id: string) => api.del(`/discussions/${id}`),
   getComments: (discussionId: string) =>
     api.get<{ comments: DiscussComment[] }>(`/comments/${discussionId}`),
   addComment: (discussionId: string, content: string) =>
@@ -286,6 +297,7 @@ export const discussApi = {
     api.post<{ comment: DiscussComment }>("/comments/add", { discussionId, content }),
   voteComment: (id: string, type: "UPVOTE" | "DOWNVOTE") =>
     api.post<{ votes: { upvotes: number; downvotes: number } }>(`/comments/vote/${id}`, { type }),
+  removeComment: (id: string) => api.del(`/comments/${id}`),
 };
 
 export const leaderboardApi = {
@@ -296,6 +308,9 @@ export const leaderboardApi = {
 };
 
 export const usersApi = {
+  me: () => safeGet<any>("/users/me/profile", null),
+  public: (identifier: string) =>
+    safeGet<any>(`/users/${identifier}`, null),
   byUsername: (username: string) =>
     safeGet<{ user: User | null; badges: Badge[]; stats: any }>(`/users/${username}`, { user: null, badges: [], stats: {} }),
   badges: () => safeGet<{ badges: Badge[] }>("/users/me/badges", { badges: [] }),
@@ -326,6 +341,9 @@ export const usersApi = {
       method: "POST",
       credentials: "include",
       body: fd,
+      headers: {
+        // "Content-Type": "multipart/form-data" // Browser sets this automatically with boundary
+      }
     });
     if (!res.ok) throw new ApiError("Upload failed", res.status);
     return res.json() as Promise<{ user: User }>;
@@ -342,6 +360,14 @@ export const adminApi = {
     "/users/admin/stats",
     { users: 0, problems: 0, submissions: 0, contests: 0 }
   ),
+  analytics: () => safeGet<{ 
+    submissionChart: { date: string; count: number }[];
+    difficultyDist: { name: string; value: number }[];
+    userGrowth: number;
+    popularProblems: { title: string; count: number }[];
+    contestSummary: any[];
+  }>("/users/admin/analytics", { submissionChart: [], difficultyDist: [], userGrowth: 0, popularProblems: [], contestSummary: [] }),
+  deleteUser: (userId: string) => api.del(`/users/admin/${userId}`),
 };
 
 export const aiApi = {
@@ -355,3 +381,8 @@ export const LANGUAGES: { id: number; name: string; key: string; monaco: string 
   { id: 62, name: "Java (OpenJDK 13)", key: "JAVA", monaco: "java" },
   { id: 54, name: "C++ (GCC 9.2)", key: "CPP", monaco: "cpp" },
 ];
+export const ratingsApi = {
+  updateContest: (id: string) => api.post(`/ratings/contest/${id}/update`),
+  getPredictions: (id: string) => api.get(`/ratings/contest/${id}/predictions`),
+  getUserRating: (userId: string) => api.get(`/ratings/user/${userId}`),
+};

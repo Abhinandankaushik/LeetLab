@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Maximize2, Minimize2, Play, Pause, RotateCcw, Settings, Type, Palette, Layout, Code2 } from "lucide-react";
+import { Maximize2, Minimize2, Play, Pause, RotateCcw, Settings, Type, Palette, Layout, Code2, Trophy, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -32,6 +32,11 @@ interface EditorToolbarProps {
   languages: any[];
   activeLang: any;
   onLangChange: (l: any) => void;
+  // Contest Props
+  problems?: any[];
+  activeProblem?: any;
+  onProblemChange?: (id: string) => void;
+  contestTimer?: React.ReactNode;
 }
 
 export function EditorToolbar({
@@ -44,7 +49,11 @@ export function EditorToolbar({
   onSettingsChange,
   languages,
   activeLang,
-  onLangChange
+  onLangChange,
+  problems,
+  activeProblem,
+  onProblemChange,
+  contestTimer
 }: EditorToolbarProps) {
   // Timer State
   const [seconds, setSeconds] = React.useState(0);
@@ -74,40 +83,73 @@ export function EditorToolbar({
       <div className="absolute inset-x-0 bottom-[-1px] h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       
       <div className="flex items-center gap-3">
-        {/* Lang Selector */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 gap-2 font-mono text-xs hover:bg-primary/10">
-              <Layout className="h-3.5 w-3.5" />
-              {activeLang.name}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-40">
-            {languages.map((l) => (
-              <DropdownMenuItem key={l.id} onClick={() => onLangChange(l)}>
-                {l.name}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Problem Selector (Contest Mode) */}
+        {problems && onProblemChange && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 gap-2 font-black text-xs hover:bg-primary/10 border border-primary/20 bg-primary/5 rounded-lg px-3">
+                <Trophy className="h-3.5 w-3.5 text-primary" />
+                <span className="text-primary">{activeProblem?.label}. {activeProblem?.problem?.title}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              {problems.map((p) => (
+                <DropdownMenuItem key={p.id} onClick={() => onProblemChange(p.problem.id)} className="gap-3">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-muted font-mono text-[10px] font-black">
+                    {p.label}
+                  </span>
+                  <span className="font-bold text-sm">{p.problem.title}</span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
-        <div className="h-4 w-px bg-border/60" />
-
-        {/* Timer - Hidden on very small screens */}
-        <div className={cn(
-          "hidden md:flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[11px] transition-all shrink-0",
-          isActive ? "border-primary/50 bg-primary/5 text-primary glow-primary-sm" : "border-border/40 bg-muted/40 text-muted-foreground"
-        )}>
-          <span className={cn(isActive && "animate-pulse")}>{formatTime(seconds)}</span>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setIsActive(!isActive)} className="hover:text-foreground">
-              {isActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-            </button>
-            <button onClick={() => { setSeconds(0); setIsActive(false); }} className="hover:text-foreground">
-              <RotateCcw className="h-3 w-3" />
-            </button>
+        {/* Contest Timer HUD */}
+        {contestTimer && (
+          <div className="flex items-center gap-2 px-4 py-1 rounded-full bg-muted/40 border border-border/60 font-mono text-xs font-bold shadow-inner">
+            <Timer className="h-3.5 w-3.5 text-primary animate-pulse" />
+            {contestTimer}
           </div>
-        </div>
+        )}
+
+        {!problems && (
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 gap-2 font-mono text-xs hover:bg-primary/10">
+                  <Layout className="h-3.5 w-3.5" />
+                  {activeLang.name}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-40">
+                {languages.map((l) => (
+                  <DropdownMenuItem key={l.id} onClick={() => onLangChange(l)}>
+                    {l.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="h-4 w-px bg-border/60" />
+
+            {/* Timer - Hidden on very small screens */}
+            <div className={cn(
+              "hidden md:flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[11px] transition-all shrink-0",
+              isActive ? "border-primary/50 bg-primary/5 text-primary glow-primary-sm" : "border-border/40 bg-muted/40 text-muted-foreground"
+            )}>
+              <span className={cn(isActive && "animate-pulse")}>{formatTime(seconds)}</span>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setIsActive(!isActive)} className="hover:text-foreground">
+                  {isActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                </button>
+                <button onClick={() => { setSeconds(0); setIsActive(false); }} className="hover:text-foreground">
+                  <RotateCcw className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-2">

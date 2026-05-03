@@ -2,41 +2,48 @@ import { db } from "../libs/db.js"
 
 
 export const getAllSubmission = async (req, res) => {
-
     try {
-
         const userId = req.user.id;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
 
-        const submissions = await db.submission.findMany({
-            where: {
-                userId: userId
-            },
-            include: {
-                problem: {
-                    select: {
-                        title: true
+        const [submissions, total] = await Promise.all([
+            db.submission.findMany({
+                where: { userId },
+                include: {
+                    problem: {
+                        select: {
+                            id: true,
+                            title: true,
+                            defficulty: true
+                        }
                     }
-                }
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
-        });
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit
+            }),
+            db.submission.count({ where: { userId } })
+        ]);
 
         res.status(200).json({
             success: true,
             message: "Submissions fetched successfully",
-            submissions: submissions
+            submissions,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
         });
-
     } catch (err) {
-
         res.status(500).json({
             success: false,
             message: "Internal Server Error",
             error: err.message,
-        })
-
+        });
     }
 }
 

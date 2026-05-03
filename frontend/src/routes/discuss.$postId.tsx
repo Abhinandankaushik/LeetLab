@@ -7,7 +7,7 @@ import {
   ArrowLeft, ArrowUp, ThumbsDown, Eye, MessageSquare, 
   Loader2, Send, Share2, Bookmark, Clock, User, 
   TrendingUp, Award, ShieldCheck, Flame, ChevronDown, 
-  MoreVertical, Sparkles
+  MoreVertical, Sparkles, Trash2
 } from "lucide-react";
 import { EmptyState, ErrorState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,28 @@ export default function PostDetail() {
       qc.invalidateQueries({ queryKey: ["discuss-comments", postId] });
     } catch (e: any) {
       toast.error(e?.message || "Transmission error.");
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (!confirm("Vanish this discourse forever?")) return;
+    try {
+      await discussApi.remove(postId!);
+      toast.success("Discourse purged.");
+      window.location.href = "/discuss";
+    } catch (e: any) {
+      toast.error("Failed to purge.");
+    }
+  };
+
+  const handleDeleteComment = async (id: string) => {
+    if (!confirm("Silence this thought?")) return;
+    try {
+      await discussApi.removeComment(id);
+      toast.success("Thought silenced.");
+      qc.invalidateQueries({ queryKey: ["discuss-comments", postId] });
+    } catch (e: any) {
+      toast.error("Failed to silence.");
     }
   };
 
@@ -148,6 +170,14 @@ export default function PostDetail() {
              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-[#1a1a2e] hover:text-[#00ff88] border border-transparent hover:border-[#00ff88]/20 transition-all">
                 <Share2 className="h-4 w-4" />
              </Button>
+             {user?.role === "ADMIN" && (
+               <Button 
+                onClick={handleDeletePost}
+                variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-hard/10 hover:text-hard border border-transparent hover:border-hard/20 transition-all"
+               >
+                 <Trash2 className="h-4 w-4" />
+               </Button>
+             )}
           </div>
         </div>
 
@@ -341,6 +371,14 @@ export default function PostDetail() {
                            <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
                               <MoreVertical className="h-3 w-3" />
                            </Button>
+                           {user?.role === "ADMIN" && (
+                             <Button 
+                              onClick={() => handleDeleteComment(c.id)}
+                              variant="ghost" size="icon" className="h-6 w-6 rounded-md text-hard hover:bg-hard/10"
+                             >
+                               <Trash2 className="h-3 w-3" />
+                             </Button>
+                           )}
                         </div>
                       </div>
                       <p className="text-slate-400 text-xs leading-relaxed pl-10 group-hover:text-slate-300 transition-colors">

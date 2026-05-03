@@ -168,8 +168,26 @@
     transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.3s ease, opacity 0.2s ease;
   }
 
-  @media (prefers-reduced-motion: reduce) {
+  button:active,
+  a:active {
+    transform: scale(0.96);
+    opacity: 0.8;
+  }
 
+  /* Recharts Text visibility */
+  .recharts-text {
+    fill: var(--muted-foreground) !important;
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+  
+  .recharts-cartesian-grid-horizontal line,
+  .recharts-cartesian-grid-vertical line {
+    stroke: var(--border) !important;
+    stroke-opacity: 0.3;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
@@ -572,4 +590,27 @@
     color: var(--primary);
     animation: blink-caret 1s steps(2) infinite;
   }
+}
+
+/* Markdown Prose Styles */
+.prose {
+  color: var(--foreground);
+  max-width: none;
+}
+.prose h1 { @apply text-3xl font-black mt-8 mb-4 text-primary; }
+.prose h2 { @apply text-2xl font-black mt-6 mb-3 text-primary/90; }
+.prose h3 { @apply text-xl font-bold mt-4 mb-2; }
+.prose p { @apply my-4 leading-relaxed; }
+.prose ul { @apply list-disc list-inside my-4 space-y-1 ml-4; }
+.prose ol { @apply list-decimal list-inside my-4 space-y-1 ml-4; }
+.prose li { @apply marker:text-primary; }
+.prose code { @apply bg-muted/60 px-1.5 py-0.5 rounded font-mono text-sm border border-border/40; }
+.prose pre { @apply bg-muted/30 p-4 rounded-xl border border-border/40 my-6 overflow-x-auto; }
+.prose pre code { @apply bg-transparent border-none p-0; }
+.prose blockquote { @apply border-l-4 border-primary/40 pl-4 italic my-6 text-muted-foreground; }
+.prose strong { @apply font-black text-primary/80; }
+.prose hr { @apply border-t border-border/40 my-8; }
+
+.prose-invert {
+  color: var(--foreground);
 }

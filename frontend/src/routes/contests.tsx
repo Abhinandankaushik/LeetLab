@@ -2,127 +2,212 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { contestsApi, type Contest } from "@/lib/api";
-import { Trophy, Calendar, Users, Clock, Zap } from "lucide-react";
+import { Trophy, Calendar, Users, Clock, Zap, Timer, ChevronRight, History, Star, TrendingUp } from "lucide-react";
 import { CardGridSkeleton, EmptyState, ErrorState } from "@/components/empty-state";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
-type Tab = "upcoming" | "live" | "ended";
+type Tab = "upcoming" | "past";
 
 export default function ContestsPage() {
-  const [tab, setTab] = React.useState<Tab>("upcoming");
+  const [tab, setTab] = React.useState<"live" | "upcoming" | "past">("live");
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["contests"],
     queryFn: () => contestsApi.all()
   });
 
   const contests = data?.contests ?? [];
-  const filtered = contests.filter((c) => c.status === tab);
+  const live = contests.filter(c => c.status === "live");
+  const upcoming = contests.filter(c => c.status === "upcoming");
+  const past = contests.filter(c => c.status === "ended");
+
+  // Auto-switch to upcoming if no live contests
+  React.useEffect(() => {
+    if (!isLoading && live.length === 0 && tab === "live") {
+      setTab("upcoming");
+    }
+  }, [isLoading, live.length]);
+
+  if (isLoading) return <div className="mx-auto max-w-7xl px-4 py-10"><CardGridSkeleton count={6} /></div>;
+  if (isError) return <div className="mx-auto max-w-7xl px-4 py-10"><ErrorState description="Couldn't fetch contests." onRetry={() => refetch()} /></div>;
+
+  const currentContests = tab === "live" ? live : tab === "upcoming" ? upcoming : past;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10">
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto max-w-7xl px-4 py-10 stagger">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-primary">/ contests</p>
-          <h1 className="mt-2 font-display text-4xl font-bold">Compete. Climb. Conquer.</h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Rated weekly and biweekly contests. Win rating, earn badges, climb the leaderboard.
-          </p>
+          <h1 className="font-display text-3xl font-black tracking-tight">Contests</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Compete, solve, and climb the global leaderboard.</p>
+        </div>
+        
+        <div className="hidden sm:flex items-center gap-3">
+          <Link to="/contests/history" className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-muted transition-all text-xs font-bold">
+            <History className="h-3.5 w-3.5" /> History
+          </Link>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-8 flex overflow-x-auto scrollbar-none pb-1">
-        <div className="inline-flex items-center gap-1 rounded-md border border-border bg-card p-1 shrink-0">
-          {(["upcoming", "live", "ended"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={cn(
-                "rounded px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all shrink-0",
-                tab === t ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-              )}
-            >
-              {t === "live" && <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-hard" />}
-              {t}
-            </button>
-          ))}
+      {/* Tabs Section */}
+      <section className="mt-8">
+        <div className="flex items-center justify-between border-b border-border/60 mb-8">
+          <div className="flex gap-8">
+            {[
+              { id: "live", label: "Live", count: live.length, color: "text-hard" },
+              { id: "upcoming", label: "Upcoming", count: upcoming.length, color: "text-primary" },
+              { id: "past", label: "Finished", count: past.length, color: "text-muted-foreground" }
+            ].map((t) => (
+              <button 
+                key={t.id}
+                onClick={() => setTab(t.id as any)}
+                className={cn(
+                  "pb-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative flex items-center gap-2",
+                  tab === t.id ? t.color : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.label}
+                {tab === t.id && (
+                  <div className={cn(
+                    "absolute bottom-0 left-0 right-0 h-0.5 rounded-full",
+                    t.id === "live" ? "bg-hard" : "bg-primary"
+                  )} />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {currentContests.length === 0 ? (
+            <div className="col-span-full py-24 text-center bg-card/30 rounded-3xl border border-dashed border-border flex flex-col items-center justify-center">
+              <div className="relative mb-6">
+                <div className="absolute -inset-4 bg-muted/20 blur-xl rounded-full" />
+                <Trophy className="h-16 w-16 text-muted-foreground/30 relative" />
+              </div>
+              <h2 className="text-xl font-bold">{tab === "live" ? "No contests live" : tab === "upcoming" ? "No upcoming contests" : "No past contests"}</h2>
+              <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">Check back soon for new challenges and events.</p>
+            </div>
+          ) : (
+            currentContests.map((c) => (
+              tab === "live" ? <LiveContestCard key={c.id} contest={c} /> : <ContestCard key={c.id} contest={c} />
+            ))
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function LiveContestCard({ contest }: { contest: Contest }) {
+  return (
+    <Link
+      to={`/contests/${contest.id}`}
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-hard/20 bg-card p-5 transition-all hover:border-hard/40 hover:shadow-xl"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="h-1.5 w-1.5 rounded-full bg-hard animate-pulse" />
+          <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-hard">Live Now</span>
+        </div>
+        <div className="flex items-center gap-2 text-[9px] font-bold text-muted-foreground uppercase">
+          <Users className="h-3 w-3" /> {contest.participantCount || 0}
         </div>
       </div>
 
-      {isLoading && <CardGridSkeleton count={6} />}
-      {isError && <ErrorState description="Couldn't fetch contests." onRetry={() => refetch()} />}
-      {!isLoading && !isError && filtered.length === 0 && (
-        <EmptyState
-          icon={Trophy}
-          title={tab === "upcoming" ? "No upcoming contests" : tab === "live" ? "No live contests" : "No ended contests"}
-          description={
-            contests.length === 0
-              ? "Contest endpoints are not yet available on the backend. Add /contests routes to your Express server to populate this page."
-              : "Check back soon — new contests are scheduled regularly."
-          }
-        />
-      )}
+      <h3 className="mt-4 font-display text-lg font-bold group-hover:text-hard transition-colors line-clamp-1">{contest.name}</h3>
+      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground leading-relaxed">
+        {contest.description || "The arena is open! Dive in now and compete for the top spot."}
+      </p>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((c) => <ContestCard key={c.id} contest={c} tab={tab} />)}
+      <div className="mt-6 flex items-center justify-between pt-4 border-t border-border/40">
+        <div className="flex flex-col">
+          <span className="text-[8px] font-bold uppercase text-muted-foreground tracking-widest">Ends In</span>
+          <div className="font-mono text-sm font-black text-hard tabular-nums">
+            <ContestCountdown startTime={contest.endTime} />
+          </div>
+        </div>
+        <Button size="sm" className="bg-hard hover:bg-hard/90 text-white font-bold rounded-lg px-4 h-8 text-[10px] uppercase tracking-wider">
+           Join Arena
+        </Button>
+      </div>
+    </Link>
+  );
+}
+
+function ContestCard({ contest }: { contest: Contest }) {
+  const start = new Date(contest.startTime);
+  const end = new Date(contest.endTime);
+  const duration = Math.round((end.getTime() - start.getTime()) / 60000);
+
+  return (
+    <Link
+      to={`/contests/${contest.id}`}
+      className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/50 hover:shadow-lg"
+    >
+      <div className="flex items-center justify-between">
+        <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wider text-muted-foreground">
+          {contest.type}
+        </span>
+        <div className="flex items-center gap-2">
+          {contest.isRegistered ? (
+            <span className="flex items-center gap-1 font-mono text-[8px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20">
+              REGISTERED
+            </span>
+          ) : (
+             <span className="font-mono text-[9px] text-muted-foreground">{start.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+          )}
+        </div>
+      </div>
+
+      <h3 className="mt-3 font-display text-base font-bold group-hover:text-primary transition-colors line-clamp-1">{contest.name}</h3>
+      
+      <div className="mt-6 flex items-center justify-between pt-4 border-t border-border/40">
+        <div className="flex items-center gap-3 font-mono text-[9px] text-muted-foreground">
+          <div className="flex items-center gap-1"><Users className="h-3 w-3" /> {contest.participantCount || 0}</div>
+          <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> {duration}m</div>
+          <div className="flex items-center gap-1"><Trophy className="h-3 w-3" /> {contest.problems?.length || 0}</div>
+        </div>
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+      </div>
+    </Link>
+  );
+}
+
+function StatsCard({ icon: Icon, label, value, subtext }: { icon: any; label: string; value: string; subtext: string }) {
+  return (
+    <div className="p-5 rounded-2xl bg-muted/30 border border-border/40">
+      <div className="flex items-center gap-2 text-[10px] uppercase font-mono font-bold tracking-widest text-muted-foreground">
+        <Icon className="h-3 w-3" /> {label}
+      </div>
+      <div className="mt-2 flex items-baseline gap-2">
+        <span className="text-2xl font-black">{value}</span>
+        <span className="text-[10px] text-primary font-bold">{subtext}</span>
       </div>
     </div>
   );
 }
 
-function ContestCard({ contest, tab }: { contest: Contest; tab: Tab }) {
-  const start = new Date(contest.startTime);
-  const end = new Date(contest.endTime);
-  const duration = Math.round((end.getTime() - start.getTime()) / 60000);
+function ContestCountdown({ startTime }: { startTime: string | Date }) {
+  const [timeLeft, setTimeLeft] = React.useState<string>("");
 
-  const accent =
-    contest.type === "weekly" ? "from-primary to-accent"
-      : contest.type === "biweekly" ? "from-accent to-medium"
-        : contest.type === "monthly" ? "from-medium to-hard" : "from-primary to-medium";
+  React.useEffect(() => {
+    const target = new Date(startTime).getTime();
+    const update = () => {
+      const now = Date.now();
+      const diff = target - now;
+      if (diff <= 0) { setTimeLeft("00:00:00"); return; }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+      if (days > 0) setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+      else setTimeLeft(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [startTime]);
 
-  return (
-    <Link
-      to={`/contests/${contest.slug}`}
-      className="group relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/50 hover:shadow-lg"
-      style={{ boxShadow: "0 1px 0 0 var(--border)" }}
-    >
-      <div className={cn("absolute -right-12 -top-12 h-32 w-32 rounded-full bg-gradient-to-br opacity-20 blur-2xl transition-opacity group-hover:opacity-40", accent)} />
-      <div className="relative">
-        <div className="flex items-center justify-between">
-          <span className={cn("rounded-md bg-gradient-to-r px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-primary-foreground", accent)}>
-            {contest.type}
-          </span>
-          {tab === "live" && <span className="flex items-center gap-1 font-mono text-[10px] font-bold uppercase text-hard">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-hard" /> LIVE
-          </span>}
-        </div>
-
-        <h3 className="mt-4 font-display text-lg font-semibold">{contest.name}</h3>
-        {contest.description && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{contest.description}</p>}
-
-        <dl className="mt-5 grid grid-cols-2 gap-3 font-mono text-[11px]">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            <span>{start.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>{duration} min</span>
-          </div>
-          {contest.participantCount !== undefined && (
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Users className="h-3 w-3" />
-              <span>{contest.participantCount.toLocaleString()}</span>
-            </div>
-          )}
-          {contest.problems?.length ? (
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Zap className="h-3 w-3" />
-              <span>{contest.problems.length} problems</span>
-            </div>
-          ) : null}
-        </dl>
-      </div>
-    </Link>
-  );
+  return <span className="tabular-nums">{timeLeft}</span>;
 }
