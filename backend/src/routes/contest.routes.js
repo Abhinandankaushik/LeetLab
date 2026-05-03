@@ -1,5 +1,5 @@
 import express from "express";
-import { authMiddleware, optionalAuthMiddleware } from "../middleware/auth.middleware.js";
+import { authMiddleware, optionalAuthMiddleware, checkAdmin } from "../middleware/auth.middleware.js";
 import { 
   createContest, 
   getContests, 
@@ -7,7 +7,8 @@ import {
   registerForContest,
   unregisterFromContest,
   getContestStandings,
-  getMyContests
+  getMyContests,
+  updateContest
 } from "../controllers/contest.controller.js";
 
 const router = express.Router();
@@ -19,5 +20,6 @@ router.get("/:id", optionalAuthMiddleware, getContestById);
 router.get("/:id/standings", getContestStandings);
 router.post("/:id/register", authMiddleware, registerForContest);
 router.post("/:id/unregister", authMiddleware, unregisterFromContest);
+router.put("/:id", authMiddleware, checkAdmin, updateContest);
 
 export default router;

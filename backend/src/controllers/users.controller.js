@@ -246,14 +246,14 @@ export const getMeBadges = async (req, res) => {
 
 export const getAdminStats = async (_req, res) => {
   try {
-    const [userCount, problemCount, submissionCount, contestCount, recentUsers] = await Promise.all([
+    const [users, problems, submissions, contests, recentUsers] = await Promise.all([
       db.user.count(),
       db.problem.count(),
       db.submission.count(),
       db.contest.count(),
       db.user.findMany({
         orderBy: { createdAt: "desc" },
-        take: 10,
+        take: 5,
         select: {
           id: true,
           name: true,
@@ -261,16 +261,67 @@ export const getAdminStats = async (_req, res) => {
           email: true,
           role: true,
           createdAt: true,
+          rating: true
         },
       }),
     ]);
 
     return res.status(200).json({
-      stats: { userCount, problemCount, contestCount, submissionCount },
+      users,
+      problems,
+      submissions,
+      contests,
       recentUsers,
     });
   } catch (error) {
     return res.status(500).json({ message: "Failed to fetch admin stats", error: String(error) });
+  }
+};
+
+export const getAdminAnalytics = async (_req, res) => {
+  try {
+    // 1. Submissions per day (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const submissionActivity = await db.submission.groupBy({
+      by: ["createdAt"],
+      where: {
+        createdAt: { gte: sevenDaysAgo }
+      },
+      _count: { id: true }
+    });
+
+    // Normalize activity by day
+    const submissionMap = {};
+    submissionActivity.forEach(s => {
+      const day = s.createdAt.toISOString().split("T")[0];
+      submissionMap[day] = (submissionMap[day] || 0) + s._count.id;
+    });
+
+    const submissionChart = Object.entries(submissionMap).map(([date, count]) => ({ date, count }));
+
+    // 2. Difficulty distribution
+    const difficultyDist = await db.problem.groupBy({
+      by: ["defficulty"],
+      _count: { id: true }
+    });
+
+    // 3. User growth
+    const userGrowth = await db.user.groupBy({
+      by: ["createdAt"],
+      where: { createdAt: { gte: sevenDaysAgo } },
+      _count: { id: true }
+    });
+
+    return res.status(200).json({
+      submissionChart,
+      difficultyDist: difficultyDist.map(d => ({ name: d.defficulty, value: d._count.id })),
+      userGrowth: userGrowth.length
+    });
+  } catch (error) {
+    console.error("Analytics Error:", error);
+    res.status(500).json({ message: "Analytics failed" });
   }
 };
 

@@ -354,3 +354,26 @@ export const getMyContests = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+export const updateContest = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, startTime, endTime, status, slug } = req.body;
+
+    const updatedContest = await db.contest.update({
+      where: { id },
+      data: {
+        name,
+        description,
+        startTime: startTime ? new Date(startTime) : undefined,
+        endTime: endTime ? new Date(endTime) : undefined,
+        status,
+        slug
+      }
+    });
+
+    res.status(200).json({ success: true, contest: updatedContest });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

@@ -4,6 +4,7 @@ import {
   deleteUserByAdmin,
   getAdminAllUsers,
   getAdminStats,
+  getAdminAnalytics,
   getMeBadges,
   getMeProfile,
   getPublicProfile,
@@ -19,6 +20,7 @@ usersRoute.patch("/me/profile", authMiddleware, updateMeProfile);
 usersRoute.get("/me/badges", authMiddleware, getMeBadges);
 
 usersRoute.get("/admin/stats", authMiddleware, checkAdmin, getAdminStats);
+usersRoute.get("/admin/analytics", authMiddleware, checkAdmin, getAdminAnalytics);
 usersRoute.get("/admin/all", authMiddleware, checkAdmin, getAdminAllUsers);
 usersRoute.patch("/admin/:userId/role", authMiddleware, checkAdmin, toggleUserRole);
 usersRoute.delete("/admin/:userId", authMiddleware, checkAdmin, deleteUserByAdmin);
