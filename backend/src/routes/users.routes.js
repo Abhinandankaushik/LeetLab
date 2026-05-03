@@ -10,7 +10,6 @@ import {
   getPublicProfile,
   toggleUserRole,
   updateMeProfile,
-  getUserTopicStats,
 } from "../controllers/users.controller.js";
 
 const usersRoute = express.Router();
@@ -25,7 +24,6 @@ usersRoute.get("/admin/all", authMiddleware, checkAdmin, getAdminAllUsers);
 usersRoute.patch("/admin/:userId/role", authMiddleware, checkAdmin, toggleUserRole);
 usersRoute.delete("/admin/:userId", authMiddleware, checkAdmin, deleteUserByAdmin);
 
-usersRoute.get("/:userId/topic-stats", authMiddleware, getUserTopicStats);
 usersRoute.get("/:identifier", authMiddleware, getPublicProfile);
 
 export default usersRoute;

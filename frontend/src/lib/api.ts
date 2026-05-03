@@ -327,11 +327,6 @@ export const usersApi = {
     }));
   },
   stats: () => safeGet<{ stats: any }>("/analytics/stats", { stats: {} }),
-  topicStats: (userId: string) =>
-    safeGet<{ stats: { tag: string; solved: number; total: number }[] }>(
-      `/users/${userId}/topic-stats`,
-      { stats: [] }
-    ),
   updateProfile: (data: Partial<User>) =>
     api.patch<{ user: User }>("/users/me/profile", data),
   uploadAvatar: async (file: File) => {

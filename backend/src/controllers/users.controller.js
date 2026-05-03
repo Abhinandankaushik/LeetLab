@@ -45,7 +45,6 @@ const buildProfilePayload = async (userId, isPublic = false) => {
     userRank,
     languageStats,
     discussCount,
-    allRatings,
   ] = await Promise.all([
     db.problemSolved.count({ where: { userId } }),
     db.submission.count({ where: { userId } }),
@@ -99,16 +98,11 @@ const buildProfilePayload = async (userId, isPublic = false) => {
       _count: { id: true }
     }),
     db.discussion.count({ where: { userId } }),
-    db.user.findMany({ select: { rating: true } })
   ]);
 
   // Generate distribution for percentile chart (dynamic)
-  const distribution = new Array(20).fill(0);
-  const maxRating = Math.max(...allRatings.map(r => r.rating), 3000);
-  allRatings.forEach(r => {
-    const bucket = Math.min(19, Math.floor((r.rating / maxRating) * 20));
-    distribution[bucket]++;
-  });
+  const distribution = new Array(20).fill(0); // Mock distribution for now
+  distribution[5] = 10; distribution[8] = 25; distribution[10] = 50; distribution[12] = 20;
 
   const difficultyStats = { EASY: 0, MEDIUM: 0, HARD: 0 };
   solvedByDifficulty.forEach((item) => {
@@ -485,38 +479,5 @@ export const deleteUserByAdmin = async (req, res) => {
     return res.status(200).json({ message: "User deleted" });
   } catch (error) {
     return res.status(500).json({ message: "Failed to delete user", error: String(error) });
-  }
-};
-export const getUserTopicStats = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const solvedProblems = await db.problem.findMany({
-      where: {
-        solvedBy: {
-          some: { userId },
-        },
-      },
-      select: {
-        tags: true,
-      },
-    });
-
-    const tagCount = new Map();
-    solvedProblems.forEach((p) => {
-      p.tags.forEach((tag) => {
-        tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
-      });
-    });
-
-    const stats = Array.from(tagCount.entries()).map(([tag, solved]) => ({
-      tag,
-      solved,
-      total: solved, // For now total is same as solved until we have total tags counts
-    }));
-
-    res.status(200).json({ success: true, stats });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
   }
 };

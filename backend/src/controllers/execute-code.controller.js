@@ -89,9 +89,6 @@ export const excutecode = async (req, res) => {
 
 
         console.log(`🚀 Executing ${testcasesToRun.length} test cases for problem: ${problem.title}`);
-        testcasesToRun.forEach((tc, i) => {
-            console.log(`   [TC ${i + 1}] Input: "${tc.input}" | Expected: "${tc.expectedOutput}"`);
-        });
 
         // 3. Send and Evaluate submissions using the pipeline
         const result = await runSubmissions({
