@@ -7,6 +7,7 @@ import {
   Flame, Users, Activity,
 } from "lucide-react";
 import { Typewriter } from "@/components/Typewriter";
+import { SiteFooter } from "@/components/site-footer";
 
 export default function HomePage() {
   const problems = useQuery({
@@ -165,6 +166,7 @@ export default function HomePage() {
           </Button>
         </div>
       </section>
+      <SiteFooter />
     </div>
   );
 }

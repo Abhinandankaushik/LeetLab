@@ -32,6 +32,8 @@ import Profile from "@/routes/profile";
 import ProfileEdit from "@/routes/profile.edit";
 import Submissions from "@/routes/submissions";
 import UserProfile from "@/routes/u.$username";
+import Terms from "@/routes/terms";
+import Privacy from "@/routes/privacy";
 import NotFound from "@/routes/not-found";
 
 const queryClient = new QueryClient({
@@ -93,13 +95,12 @@ function App() {
                   <Route path="/profile/edit" element={<ProfileEdit />} />
                   <Route path="/submissions" element={<Submissions />} />
                   <Route path="/u/:username" element={<UserProfile />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/privacy" element={<Privacy />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </PageTransition>
             </main>
-            <footer className="border-t border-border/60 py-6 text-center text-xs text-muted-foreground">
-              <span className="font-mono">// LeetLab — built for the relentless</span>
-            </footer>
           </div>
           <Toaster position="bottom-right" richColors />
         </AuthProvider>
