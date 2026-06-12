@@ -1,18 +1,18 @@
 import * as React from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, Navigate } from "react-router-dom";
 import { playlistsApi, type Playlist } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { 
-  Loader2, ArrowLeft, BookOpen, Clock, BarChart2, 
-  Play, MoreVertical, Trash2, CheckCircle2, Lock 
+import {
+  Loader2, ArrowLeft, BookOpen, Clock, BarChart2,
+  Play, MoreVertical, Trash2, CheckCircle2, Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -118,7 +118,7 @@ export default function PlaylistDetailPage() {
             </h3>
 
             {problems.length === 0 ? (
-              <EmptyState 
+              <EmptyState
                 icon={Play}
                 title="This track is empty"
                 description="Add problems from the workspace to build your curriculum and start mastering new skills."
@@ -128,7 +128,7 @@ export default function PlaylistDetailPage() {
             ) : (
               <div className="grid gap-3">
                 {problems.map(({ problem }, idx) => (
-                  <div 
+                  <div
                     key={problem.id}
                     className="group relative flex items-center justify-between p-4 md:p-5 rounded-2xl border border-border bg-card hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-default"
                   >
@@ -137,7 +137,7 @@ export default function PlaylistDetailPage() {
                         {(idx + 1).toString().padStart(2, '0')}
                       </div>
                       <div className="min-w-0">
-                        <Link 
+                        <Link
                           to={`/problems/${problem.id}`}
                           className="font-display font-bold text-lg md:text-xl truncate tracking-tight hover:text-primary transition-colors block"
                         >
@@ -159,7 +159,7 @@ export default function PlaylistDetailPage() {
                           <Play className="h-4 w-4 fill-current" />
                         </Link>
                       </Button>
-                      
+
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl opacity-40 hover:opacity-100">
@@ -167,7 +167,7 @@ export default function PlaylistDetailPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="rounded-xl border-border bg-card/95 backdrop-blur-md">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             className="text-hard focus:text-hard focus:bg-hard/10 font-bold text-xs gap-2 cursor-pointer"
                             onClick={() => removeProblem(problem.id)}
                           >
@@ -187,7 +187,7 @@ export default function PlaylistDetailPage() {
         <div className="space-y-6">
           <div className="rounded-3xl border border-border bg-card/40 p-6 backdrop-blur-sm space-y-6">
             <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Track Statistics</h4>
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-border/40">
                 <div className="flex items-center gap-3">
@@ -220,10 +220,8 @@ export default function PlaylistDetailPage() {
               </div>
             </div>
 
-            <Button asChild className="w-full h-12 rounded-2xl font-bold gap-2 shadow-xl shadow-primary/20" disabled={problems.length === 0}>
-              <Link to="/problems">
-                <Play className="h-4 w-4 fill-current" /> Start Solving
-              </Link>
+            <Button className="w-full h-12 rounded-2xl font-bold gap-2 shadow-xl shadow-primary/20" disabled={problems.length === 0}>
+              <Play className="h-4 w-4 fill-current" /> Start Solving
             </Button>
           </div>
 
@@ -245,8 +243,8 @@ function DifficultyBadge({ difficulty }: { difficulty: string }) {
     <span className={cn(
       "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border",
       normalized === "easy" ? "text-easy border-easy/30 bg-easy/5" :
-      normalized === "medium" ? "text-medium border-medium/30 bg-medium/5" :
-      "text-hard border-hard/30 bg-hard/5"
+        normalized === "medium" ? "text-medium border-medium/30 bg-medium/5" :
+          "text-hard border-hard/30 bg-hard/5"
     )}>
       {difficulty}
     </span>

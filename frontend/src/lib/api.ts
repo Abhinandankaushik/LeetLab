@@ -200,6 +200,8 @@ export const authApi = {
     api.post<{ message: string; user: User }>("/auth/login", data),
   logout: () => api.post("/auth/logout"),
   check: () => api.get<{ message: string; user: User }>("/auth/check"),
+  oauth: (token: string) =>
+    api.post<{ message: string; user: User }>("/auth/oauth", { token }),
 };
 
 export const problemsApi = {

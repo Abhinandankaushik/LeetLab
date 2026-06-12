@@ -13,8 +13,6 @@ COPY . .
 
 RUN npx prisma generate
 
-RUN ls -la
-
 EXPOSE 3000
 
 CMD ["sh", "-c", "until nc -z postgres-db 5432; do echo waiting for postgres; sleep 1; done; npx prisma migrate deploy && npm run start"]

@@ -68,36 +68,52 @@
   --success: oklch(0.78 0.17 150);
   --glow: oklch(0.82 0.19 145 / 0.35);
   --grid-color: oklch(1 0 0 / 0.035);
+  /* Atmosphere */
+  --grain-opacity: 0.5;
+  --vignette: color-mix(in oklab, var(--background) 86%, black);
+  --vignette-blend: overlay;
+  --ambient-1: color-mix(in oklab, var(--primary) 11%, transparent);
+  --ambient-2: color-mix(in oklab, var(--accent) 10%, transparent);
+  --shadow-color: 0deg 0% 0%;
+  --card-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.35);
 }
 
-/* LIGHT THEME */
+/* LIGHT THEME — soft, modern, slightly tinted so white cards lift off the page */
 [data-theme="light"] {
   --radius: 0.5rem;
-  --background: oklch(0.99 0.003 250);
-  --foreground: oklch(0.18 0.015 250);
+  --background: oklch(0.975 0.006 255);
+  --foreground: oklch(0.20 0.02 260);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.015 250);
+  --card-foreground: oklch(0.20 0.02 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.015 250);
-  --primary: oklch(0.55 0.20 145);
+  --popover-foreground: oklch(0.20 0.02 260);
+  --primary: oklch(0.53 0.19 150);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.95 0.008 250);
-  --secondary-foreground: oklch(0.20 0.015 250);
-  --muted: oklch(0.96 0.006 250);
-  --muted-foreground: oklch(0.45 0.014 250);
-  --accent: oklch(0.55 0.18 220);
+  --secondary: oklch(0.945 0.008 255);
+  --secondary-foreground: oklch(0.22 0.02 260);
+  --muted: oklch(0.955 0.007 255);
+  --muted-foreground: oklch(0.47 0.018 260);
+  --accent: oklch(0.55 0.17 235);
   --accent-foreground: oklch(0.99 0 0);
-  --destructive: oklch(0.58 0.22 22);
+  --destructive: oklch(0.57 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.90 0.008 250);
-  --input: oklch(0.95 0.008 250);
-  --ring: oklch(0.55 0.20 145);
-  --easy: oklch(0.55 0.17 150);
-  --medium: oklch(0.62 0.16 70);
-  --hard: oklch(0.58 0.22 22);
-  --success: oklch(0.55 0.17 150);
-  --glow: oklch(0.55 0.20 145 / 0.20);
-  --grid-color: oklch(0 0 0 / 0.04);
+  --border: oklch(0.905 0.009 255);
+  --input: oklch(0.935 0.009 255);
+  --ring: oklch(0.53 0.19 150);
+  --easy: oklch(0.52 0.17 150);
+  --medium: oklch(0.60 0.16 70);
+  --hard: oklch(0.57 0.22 25);
+  --success: oklch(0.52 0.17 150);
+  --glow: oklch(0.53 0.19 150 / 0.22);
+  --grid-color: oklch(0.45 0.05 260 / 0.05);
+  /* Atmosphere — keep the page airy: faint grain, soft cool vignette, no harsh black */
+  --grain-opacity: 0.18;
+  --vignette: color-mix(in oklab, var(--accent) 6%, transparent);
+  --vignette-blend: multiply;
+  --ambient-1: color-mix(in oklab, var(--primary) 9%, transparent);
+  --ambient-2: color-mix(in oklab, var(--accent) 10%, transparent);
+  --shadow-color: 255deg 35% 50%;
+  --card-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 6px 18px -10px hsl(var(--shadow-color) / 0.18);
 }
 
 @layer base {
@@ -111,6 +127,15 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     transition: background-color 0.4s ease, color 0.4s ease;
+  }
+
+  /* Soft ambient colour wash so neither theme feels flat */
+  body {
+    background-image:
+      radial-gradient(60% 45% at 12% -5%, var(--ambient-1), transparent 70%),
+      radial-gradient(55% 45% at 100% 5%, var(--ambient-2), transparent 70%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 
   html {
@@ -136,6 +161,40 @@
     pointer-events: none;
     z-index: 0;
     animation: grid-drift 60s linear infinite;
+    /* Fade the grid towards the edges for a premium, focused look */
+    -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 35%, transparent 100%);
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 35%, transparent 100%);
+  }
+
+  /* Subtle film-grain overlay for depth (theme-tuned via --grain-opacity) */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: var(--grain-opacity, 0.4);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    background-size: 160px 160px;
+    mix-blend-mode: var(--vignette-blend, overlay);
+  }
+
+  /* Soft vignette as its own fixed layer so it can use a per-theme tint
+     (black in dark, faint cool tint in light — never a muddy grey on white) */
+  #root::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(120% 120% at 50% 0%, transparent 55%, var(--vignette) 100%);
+  }
+
+  /* Light mode: lift solid cards off the page with a soft shadow.
+     Lives in @layer base so explicit `shadow-*` utilities still win where set. */
+  [data-theme="light"] .bg-card {
+    box-shadow: var(--card-shadow);
   }
 
   ::selection {
@@ -172,6 +231,13 @@
   a:active {
     transform: scale(0.96);
     opacity: 0.8;
+  }
+
+  /* Stylish, accessible keyboard focus ring */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--primary), 0 0 18px var(--glow);
+    border-radius: var(--radius-md);
   }
 
   /* Recharts Text visibility */
@@ -589,6 +655,72 @@
     margin-left: 2px;
     color: var(--primary);
     animation: blink-caret 1s steps(2) infinite;
+  }
+
+  /* Glassmorphism surface */
+  .glass {
+    background: color-mix(in oklab, var(--card) 65%, transparent);
+    backdrop-filter: blur(12px) saturate(1.4);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  }
+
+  /* Soft glow on hover — lighter than hover-glow */
+  .hover-glow-soft {
+    transition: box-shadow 0.4s ease, transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .hover-glow-soft:hover {
+    border-color: color-mix(in oklab, var(--primary) 50%, var(--border));
+    box-shadow: 0 10px 30px -12px var(--glow);
+  }
+
+  /* Cursor-following spotlight. Add `spotlight` class + `data-spotlight`; a global
+     listener sets --mx/--my (see App bootstrap). */
+  .spotlight {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .spotlight::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      260px circle at var(--mx, 50%) var(--my, 0%),
+      color-mix(in oklab, var(--primary) 22%, transparent),
+      transparent 60%
+    );
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .spotlight:hover::before {
+    opacity: 1;
+  }
+
+  /* Animated conic gradient border (wrap content in a child) */
+  .animated-border {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .animated-border::before {
+    content: "";
+    position: absolute;
+    inset: -150%;
+    background: conic-gradient(from 0deg, transparent 0 70%, var(--primary) 85%, var(--accent) 100%);
+    animation: border-spin 6s linear infinite;
+    z-index: 0;
+  }
+
+  .animated-border > * {
+    position: relative;
+    z-index: 1;
   }
 }
 

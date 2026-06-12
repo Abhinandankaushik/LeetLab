@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,18 +7,23 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Terminal, Sparkles, UserPlus, ArrowRight, Zap } from "lucide-react";
 import { Typewriter } from "@/components/Typewriter";
+import { clerkEnabled } from "@/lib/clerk";
+import { SocialAuthButtons } from "@/components/social-auth";
 
 export default function RegisterPage() {
   const { register, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
+  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/problems";
+
   React.useEffect(() => {
-    if (user) navigate("/problems");
-  }, [user, navigate]);
+    if (user) navigate(redirectTo, { replace: true });
+  }, [user, navigate, redirectTo]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +31,7 @@ export default function RegisterPage() {
     try {
       await register(name, email, password);
       toast.success("Account created. Let's solve.");
-      navigate("/problems");
+      navigate(redirectTo, { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Registration failed");
     } finally { setLoading(false); }
@@ -149,6 +154,7 @@ Welcome to the lab, Solver.
               {loading ? "Initializing..." : "Create account"}
               {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
+            {clerkEnabled && <SocialAuthButtons />}
             <p className="text-center text-xs text-muted-foreground">
               Already a member? <Link to="/login" className="font-semibold text-primary hover:underline">Sign in</Link>
             </p>

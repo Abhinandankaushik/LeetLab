@@ -60,7 +60,8 @@ export const submitBatch = async (submissions) => {
     const { data } = await axios.post(`${baseUrl}/submissions/batch?base64_encoded=true`, {
         submissions: encodedSubmissions
     });
-
+   
+  
     console.log("Submission Results: ", data);
     return data; // [{token} , {token} , {token}]
 }
@@ -162,6 +163,7 @@ export const runSubmissions = async ({ source_code, language_id, testcases }) =>
     } else {
         status = "Wrong Answer";
     }
+
 
     // 10. Final Return
     return {

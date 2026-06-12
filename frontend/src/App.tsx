@@ -9,6 +9,7 @@ import { Toaster } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { PageTransition, ScrollProgress } from "@/components/page-transition";
 import { InteractiveBackground } from "@/components/interactive-background";
+import { ProtectedRoute, AdminRoute } from "@/components/route-guards";
 
 // Page Components
 import Home from "@/routes/index";
@@ -38,6 +39,8 @@ import ContestWorkspace from "@/routes/contests.$slug.workspace";
 import ContestStandings from "@/routes/contests.$id.standings";
 import ContestHistory from "@/routes/contests.history";
 import NotFound from "@/routes/not-found";
+import { clerkEnabled } from "@/lib/clerk";
+import { SsoCallback, SsoFinish } from "@/components/social-auth";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +72,20 @@ function App() {
     document.head.appendChild(script);
   }, []);
 
+  // Cursor-following spotlight: any element with `data-spotlight` gets --mx/--my
+  // updated so the `.spotlight` utility can render a glow under the pointer.
+  React.useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.("[data-spotlight]") as HTMLElement | null;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      el.style.setProperty("--mx", `${e.clientX - rect.left}px`);
+      el.style.setProperty("--my", `${e.clientY - rect.top}px`);
+    };
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => window.removeEventListener("mousemove", onMove);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
@@ -80,33 +97,45 @@ function App() {
             <main className="flex-1">
               <PageTransition>
                 <Routes>
+                  {/* Public routes */}
                   <Route path="/" element={<Home />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/admin/problems/new" element={<AdminProblemsNew />} />
-                  <Route path="/admin/problems/:problemId/edit" element={<AdminProblemsEdit />} />
-                  <Route path="/admin/problems/ai" element={<AdminAIProblem />} />
-                  <Route path="/admin/contests/new" element={<AdminContestsNew />} />
                   <Route path="/contests" element={<Contests />} />
-                  <Route path="/contests/history" element={<ContestHistory />} />
                   <Route path="/contests/:id" element={<ContestsDetail />} />
                   <Route path="/contests/:id/standings" element={<ContestStandings />} />
-                  <Route path="/contests/:id/workspace" element={<ContestWorkspace />} />
-                  <Route path="/contests/:id/workspace/:problemId" element={<ContestWorkspace />} />
                   <Route path="/discuss" element={<Discuss />} />
                   <Route path="/discuss/:postId" element={<DiscussPost />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
-                  <Route path="/playlists" element={<Playlists />} />
-                  <Route path="/playlists/:id" element={<PlaylistDetail />} />
+                  {clerkEnabled && (
+                    <>
+                      <Route path="/sso-callback" element={<SsoCallback />} />
+                      <Route path="/sso-finish" element={<SsoFinish />} />
+                    </>
+                  )}
                   <Route path="/problems" element={<Problems />} />
                   <Route path="/problems/:problemId" element={<ProblemsDetail />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/profile/edit" element={<ProfileEdit />} />
-                  <Route path="/submissions" element={<Submissions />} />
                   <Route path="/u/:username" element={<UserProfile />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
+
+                  {/* Authenticated-only routes */}
+                  <Route path="/contests/history" element={<ProtectedRoute><ContestHistory /></ProtectedRoute>} />
+                  <Route path="/contests/:id/workspace" element={<ProtectedRoute><ContestWorkspace /></ProtectedRoute>} />
+                  <Route path="/contests/:id/workspace/:problemId" element={<ProtectedRoute><ContestWorkspace /></ProtectedRoute>} />
+                  <Route path="/playlists" element={<ProtectedRoute><Playlists /></ProtectedRoute>} />
+                  <Route path="/playlists/:id" element={<ProtectedRoute><PlaylistDetail /></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                  <Route path="/profile/edit" element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
+                  <Route path="/submissions" element={<ProtectedRoute><Submissions /></ProtectedRoute>} />
+
+                  {/* Admin-only routes */}
+                  <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+                  <Route path="/admin/problems/new" element={<AdminRoute><AdminProblemsNew /></AdminRoute>} />
+                  <Route path="/admin/problems/:problemId/edit" element={<AdminRoute><AdminProblemsEdit /></AdminRoute>} />
+                  <Route path="/admin/problems/ai" element={<AdminRoute><AdminAIProblem /></AdminRoute>} />
+                  <Route path="/admin/contests/new" element={<AdminRoute><AdminContestsNew /></AdminRoute>} />
+
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </PageTransition>

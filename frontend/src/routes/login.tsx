@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,22 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Terminal, Flame, Trophy, ArrowRight, ShieldCheck } from "lucide-react";
 import { Typewriter } from "@/components/Typewriter";
+import { clerkEnabled } from "@/lib/clerk";
+import { SocialAuthButtons } from "@/components/social-auth";
 
 export default function LoginPage() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
+  const redirectTo = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/problems";
+
   useEffect(() => {
-    if (user) navigate("/problems");
-  }, [user, navigate]);
+    if (user) navigate(redirectTo, { replace: true });
+  }, [user, navigate, redirectTo]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +31,7 @@ export default function LoginPage() {
     try {
       await login(email, password);
       toast.success("Welcome back.");
-      navigate("/problems");
+      navigate(redirectTo, { replace: true });
     } catch (err: any) {
       toast.error(err.message || "Login failed");
     } finally {
@@ -142,6 +147,7 @@ Ready to solve.
               {loading ? "Authorizing..." : "Sign in"}
               {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
+            {clerkEnabled && <SocialAuthButtons />}
             <p className="text-center text-xs text-muted-foreground">
               Don't have an account? <Link to="/register" className="font-semibold text-primary hover:underline">Create one</Link>
             </p>

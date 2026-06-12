@@ -108,7 +108,7 @@ export default function ContestDetailPage() {
                 </span>
              </div>
              <h1 className="font-display text-5xl md:text-6xl font-black tracking-tight text-foreground mb-6">
-                {contest.name}
+                {contest?.name}
              </h1>
              <div className="flex flex-wrap items-center gap-3">
                 <Button variant="outline" className="rounded-full h-10 px-6 font-bold text-xs gap-2 border-border/60 hover:bg-primary/5 hover:border-primary/40 transition-all active:scale-95">

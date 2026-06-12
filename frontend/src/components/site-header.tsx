@@ -48,7 +48,8 @@ export function SiteHeader() {
 
   return (
     <>
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 animate-fade-in">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 animate-fade-in relative">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4">
         <Link to="/" className="group flex items-center gap-2 font-display text-lg font-bold transition-transform hover:scale-[1.02]">
           <span className="grid h-8 w-8 place-items-center rounded-md bg-gradient-primary text-primary-foreground glow-primary transition-transform duration-500 group-hover:rotate-[360deg]">

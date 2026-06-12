@@ -1,5 +1,5 @@
 import express from "express";
-import { authMiddleware, checkAdmin } from "../middleware/auth.middleware.js";
+import { authMiddleware, checkAdmin, optionalAuthMiddleware } from "../middleware/auth.middleware.js";
 import {
   deleteUserByAdmin,
   getAdminAllUsers,
@@ -24,6 +24,6 @@ usersRoute.get("/admin/all", authMiddleware, checkAdmin, getAdminAllUsers);
 usersRoute.patch("/admin/:userId/role", authMiddleware, checkAdmin, toggleUserRole);
 usersRoute.delete("/admin/:userId", authMiddleware, checkAdmin, deleteUserByAdmin);
 
-usersRoute.get("/:identifier", authMiddleware, getPublicProfile);
+usersRoute.get("/:identifier", optionalAuthMiddleware, getPublicProfile);
 
 export default usersRoute;

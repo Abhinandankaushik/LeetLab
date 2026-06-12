@@ -1,10 +1,28 @@
 import bcypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { db } from "../libs/db.js"
 import { UserRole } from "../generated/prisma/index.js";
+import { verifyToken, createClerkClient } from "@clerk/backend";
 
 import dotenv from "dotenv";
 dotenv.config();
+
+const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+const clerkClient = clerkSecretKey ? createClerkClient({ secretKey: clerkSecretKey }) : null;
+
+// Shared cookie options so login / register / oauth all behave identically.
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+const issueSession = (res, userId) => {
+    const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    res.cookie("jwt", token, cookieOptions);
+};
 
 export const register = async (req, res) => {
 
@@ -170,4 +188,86 @@ export const check = (req, res) => {
             message: "Internal Server Error while checking user"
         })
     }
-}   
+}
+
+// Social login bridge: the frontend authenticates with Clerk (Google / GitHub),
+// then sends Clerk's short-lived session token here. We verify it, sync the user
+// into our own database, and issue our regular `jwt` cookie so the rest of the app
+// (middleware, profile, etc.) keeps working unchanged.
+export const oauth = async (req, res) => {
+    try {
+        if (!clerkClient) {
+            return res.status(503).json({
+                success: false,
+                message: "Social login is not configured on the server",
+            });
+        }
+
+        const { token } = req.body;
+        if (!token) {
+            return res.status(400).json({ success: false, message: "Missing token" });
+        }
+
+        let claims;
+        try {
+            claims = await verifyToken(token, { secretKey: clerkSecretKey });
+        } catch (err) {
+            return res.status(401).json({ success: false, message: "Invalid social session" });
+        }
+
+        const clerkUserId = claims.sub;
+        const clerkUser = await clerkClient.users.getUser(clerkUserId);
+
+        const email =
+            clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)
+                ?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress;
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: "No email on social account" });
+        }
+
+        const fullName =
+            [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ").trim() ||
+            clerkUser.username ||
+            email.split("@")[0];
+        const image = clerkUser.imageUrl || null;
+
+        let user = await db.user.findUnique({ where: { email } });
+
+        if (!user) {
+            // OAuth users have no password — store an unusable random hash to satisfy the schema.
+            const randomPassword = await bcypt.hash(crypto.randomUUID(), 10);
+            user = await db.user.create({
+                data: {
+                    email,
+                    name: fullName,
+                    image,
+                    password: randomPassword,
+                    role: UserRole.USER,
+                },
+            });
+        } else if (!user.image && image) {
+            user = await db.user.update({ where: { id: user.id }, data: { image } });
+        }
+
+        issueSession(res, user.id);
+
+        res.status(200).json({
+            success: true,
+            message: "Social login successful",
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                image: user.image,
+            },
+        });
+    } catch (err) {
+        console.log("error while social login", err);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error during social login",
+        });
+    }
+};

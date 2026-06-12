@@ -181,7 +181,8 @@ function Pillar({ to, icon: Icon, title, body, accent }: { to: string; icon: any
   return (
     <Link
       to={to}
-      className="group relative overflow-hidden rounded-xl border border-border bg-card p-6 hover-lift hover:border-primary/50"
+      data-spotlight
+      className="spotlight group relative overflow-hidden rounded-xl border border-border bg-card p-6 hover-lift hover:border-primary/50"
     >
       <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${accent} opacity-15 blur-2xl transition-all duration-500 group-hover:opacity-40 group-hover:scale-125`} />
       <div className="relative">
@@ -198,7 +199,7 @@ function Pillar({ to, icon: Icon, title, body, accent }: { to: string; icon: any
 
 function Feature({ icon: Icon, title, body }: { icon: any; title: string; body: string }) {
   return (
-    <div className="group relative bg-card p-6 transition-all duration-300 hover:bg-card/40">
+    <div data-spotlight className="spotlight group relative bg-card p-6 transition-all duration-300 hover:bg-card/40">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
       <Icon className="h-6 w-6 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
       <h3 className="mt-4 font-display text-lg font-semibold">{title}</h3>

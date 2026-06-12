@@ -1,5 +1,5 @@
 import express from "express";
-import { register, login, logout, check } from "../controllers/auth.controller.js";
+import { register, login, logout, check, oauth } from "../controllers/auth.controller.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";   
 
 const authRoute = express.Router();    
@@ -8,6 +8,8 @@ const authRoute = express.Router();
 authRoute.post("/register",register);
 
 authRoute.post("/login",login);
+
+authRoute.post("/oauth",oauth);
 
 authRoute.post("/logout",authMiddleware,logout);
 
