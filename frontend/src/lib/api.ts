@@ -373,10 +373,10 @@ export const aiApi = {
 
 // Supported languages (ids stay stable for DB compatibility)
 export const LANGUAGES: { id: number; name: string; key: string; monaco: string }[] = [
-  { id: 71, name: "Python (3.11)", key: "PYTHON", monaco: "python" },
-  { id: 63, name: "JavaScript (Node 20)", key: "JAVASCRIPT", monaco: "javascript" },
-  { id: 62, name: "Java (OpenJDK 21)", key: "JAVA", monaco: "java" },
-  { id: 54, name: "C++ (GCC 13)", key: "CPP", monaco: "cpp" },
+  { id: 71, name: "Python", key: "PYTHON", monaco: "python" },
+  { id: 63, name: "JavaScript", key: "JAVASCRIPT", monaco: "javascript" },
+  { id: 62, name: "Java", key: "JAVA", monaco: "java" },
+  { id: 54, name: "C++", key: "CPP", monaco: "cpp" },
 ];
 export const ratingsApi = {
   updateContest: (id: string) => api.post(`/ratings/contest/${id}/update`),

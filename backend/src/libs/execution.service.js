@@ -50,12 +50,17 @@ export const processExecution = async (payload) => {
     }));
 
     if (!isSubmit) {
+        // Surface peak time/memory across the run so the result cards populate.
+        const maxTime = Math.max(0, ...result.details.map((d) => Number(d.time) || 0));
+        const maxMemory = Math.max(0, ...result.details.map((d) => Number(d.memory) || 0));
         return {
             success: true,
             message: "code executed successfully",
             submission: {
                 status: allPassed ? "Accepted" : "Wrong Answer",
                 language: getLanguageName(language_id),
+                time: maxTime ? `${maxTime} s` : undefined,
+                memory: maxMemory ? `${maxMemory} KB` : undefined,
                 testCases: detailedResults,
             },
         };

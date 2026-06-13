@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { problemsApi, contestsApi, leaderboardApi } from "@/lib/api";
 import {
-  ArrowRight, Code2, Trophy, Layers, Zap, Terminal, MessageSquare,
+  ArrowRight, Code2, Trophy, Layers, Zap, MessageSquare,
   Flame, Users, Activity,
 } from "lucide-react";
-import { Typewriter } from "@/components/Typewriter";
+import { CodeShowcase } from "@/components/code-showcase";
 import { SiteFooter } from "@/components/site-footer";
 
 export default function HomePage() {
@@ -25,9 +25,13 @@ export default function HomePage() {
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border/60">
+        {/* Glitchy animated grid backdrop */}
+        <div className="grid-glitch" aria-hidden="true">
+          <div className="grid-glitch-scan" />
+        </div>
         <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl animate-pulse-glow" />
         <div className="absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-accent/10 blur-3xl animate-pulse-glow" style={{ animationDelay: "2s" }} />
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-16 lg:grid-cols-[1.2fr_1fr] lg:gap-12 lg:py-28">
+        <div className="relative z-10 mx-auto grid max-w-7xl gap-8 px-4 py-16 lg:grid-cols-[1.2fr_1fr] lg:gap-12 lg:py-28">
           <div className="relative text-center lg:text-left flex flex-col items-center lg:items-start">
             <div className="mb-6 inline-flex animate-fade-in items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 font-mono text-xs text-muted-foreground">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
@@ -62,29 +66,7 @@ export default function HomePage() {
           {/* 3D code preview card */}
           <div className="relative perspective-1000">
             <div className="animate-float relative preserve-3d" style={{ transform: "rotateY(-8deg) rotateX(4deg)" }}>
-              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xl shadow-black/40">
-                <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-hard/70" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-medium/70" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-easy/70" />
-                  </div>
-                  <span className="font-mono text-xs text-muted-foreground">logic.py</span>
-                  <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
-                </div>
-                <pre className="overflow-x-auto p-5 font-mono text-[13px] leading-relaxed text-foreground min-h-[220px]">
-                  <Typewriter text={`class Solution:
-  def buildDiff(self, nums):
-    # Cooking the optimal solution...
-    # [W] Certified Logic
-    # Beats 99.9% - God Tier Speed
-    pass`} />
-                </pre>
-                <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2 font-mono text-xs">
-                  <span className="text-easy">● Absolute W</span>
-                  <span className="text-muted-foreground">10 / 10 cleared</span>
-                </div>
-              </div>
+              <CodeShowcase />
               {/* floating accent cards */}
               <div
                 className="absolute -right-6 -top-6 hidden rounded-xl border border-primary/40 bg-card/90 p-3 shadow-xl backdrop-blur md:block"

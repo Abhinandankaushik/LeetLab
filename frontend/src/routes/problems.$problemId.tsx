@@ -14,7 +14,7 @@ import { DifficultyBadge } from "@/components/difficulty-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AICodePanel } from "@/components/ai-code-panel";
 import { EditorToolbar } from "@/components/EditorToolbar";
-import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Send, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Send, ShieldAlert, ShieldCheck, Trash2, Scale, Clock, Zap, ListChecks, Code2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Bookmark } from "lucide-react";
@@ -22,12 +22,21 @@ import { Bookmark } from "lucide-react";
 // Helper to format statistics (time, memory) that might be stored as JSON strings
 const formatStat = (val: string | null) => {
   if (!val) return "n/a";
+  let raw: string = val;
   try {
     const parsed = JSON.parse(val);
-    return Array.isArray(parsed) ? parsed[0] : val;
+    if (Array.isArray(parsed)) raw = String(parsed[0] ?? "");
   } catch {
-    return val;
+    /* not JSON — use as-is */
   }
+  if (!raw) return "n/a";
+  // Memory: "12345 KB" -> show in MB once it gets large.
+  const kb = /^([\d.]+)\s*KB$/i.exec(raw.trim());
+  if (kb) {
+    const n = Number(kb[1]);
+    return n > 1024 ? `${(n / 1024).toFixed(1)} MB` : `${Math.round(n)} KB`;
+  }
+  return raw;
 };
 import { AddToPlaylistDialog } from "@/components/PlaylistDialogs";
 import * as Resizable from "react-resizable-panels";
@@ -59,11 +68,14 @@ export default function ProblemDetail() {
   const [isPlaylistOpen, setIsPlaylistOpen] = React.useState(false);
   const [userPlaylists, setUserPlaylists] = React.useState<Playlist[]>([]);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
-  const [editorSettings, setEditorSettings] = React.useState({
-    fontSize: 14,
-    theme: theme === "light" ? "leetlab-light" : "leetlab-dark",
-    fontFamily: "JetBrains Mono, monospace",
-    editorWidth: 60 // Default 60% for editor
+  const [editorSettings, setEditorSettings] = React.useState(() => {
+    const savedW = typeof window !== "undefined" ? Number(window.localStorage.getItem("leetlab:editorWidth")) : 0;
+    return {
+      fontSize: 14,
+      theme: theme === "light" ? "leetlab-light" : "leetlab-dark",
+      fontFamily: "JetBrains Mono, monospace",
+      editorWidth: savedW >= 20 && savedW <= 80 ? savedW : 60, // Default 60% for editor
+    };
   });
 
   // Editor refs + live status (cursor position, selection, line count) for the
@@ -73,9 +85,25 @@ export default function ProblemDetail() {
   const handleRunRef = React.useRef<(isSubmit?: boolean) => void>(() => {});
   const [editorStatus, setEditorStatus] = React.useState({ line: 1, col: 1, selected: 0, lines: 1 });
   const [isDragging, setIsDragging] = React.useState(false);
-  const [consoleHeight, setConsoleHeight] = React.useState(40);
+  const [consoleHeight, setConsoleHeight] = React.useState(() => {
+    const saved = typeof window !== "undefined" ? Number(window.localStorage.getItem("leetlab:consoleHeight")) : 0;
+    return saved >= 12 && saved <= 85 ? saved : 40;
+  });
   const [isResizingConsole, setIsResizingConsole] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
+
+  // Refs for smooth, lag-free panel resizing: during a drag we mutate the DOM
+  // styles directly (throttled with rAF) and only commit to React state on
+  // mouse-up, so the heavy editor tree never re-renders per frame.
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const leftPanelRef = React.useRef<HTMLDivElement>(null);
+  const rightPanelRef = React.useRef<HTMLDivElement>(null);
+  const consoleRef = React.useRef<HTMLDivElement>(null);
+  const dragModeRef = React.useRef<null | "h" | "v">(null);
+  const rafRef = React.useRef<number | null>(null);
+  const pointerRef = React.useRef({ x: 0, y: 0 });
+  const widthCommitRef = React.useRef(0);
+  const heightCommitRef = React.useRef(0);
 
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
@@ -84,52 +112,76 @@ export default function ProblemDetail() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (isMobile) return;
-    setIsDragging(true);
-  };
-
-  const handleConsoleMouseDown = (e: React.MouseEvent) => {
-    setIsResizingConsole(true);
-  };
-
-  React.useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        const newWidth = 100 - (e.clientX / window.innerWidth) * 100;
-        setEditorSettings(s => ({
-          ...s,
-          editorWidth: Math.min(Math.max(newWidth, 20), 80)
-        }));
-      }
-
-      if (isResizingConsole) {
-        const h = 100 - (e.clientY / window.innerHeight) * 100;
-        setConsoleHeight(Math.min(Math.max(h, 10), 80));
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      setIsResizingConsole(false);
-    };
-
-    if (isDragging || isResizingConsole) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = isDragging ? "col-resize" : "row-resize";
-    } else {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "default";
+  const applyDrag = React.useCallback(() => {
+    rafRef.current = null;
+    const mode = dragModeRef.current;
+    if (mode === "h" && containerRef.current && leftPanelRef.current && rightPanelRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      let leftW = ((pointerRef.current.x - rect.left) / rect.width) * 100;
+      leftW = Math.min(Math.max(leftW, 20), 80);
+      leftPanelRef.current.style.width = `${leftW}%`;
+      rightPanelRef.current.style.width = `${100 - leftW}%`;
+      widthCommitRef.current = 100 - leftW;
+    } else if (mode === "v" && rightPanelRef.current && consoleRef.current) {
+      const rect = rightPanelRef.current.getBoundingClientRect();
+      let h = ((rect.bottom - pointerRef.current.y) / rect.height) * 100;
+      h = Math.min(Math.max(h, 12), 85);
+      consoleRef.current.style.height = `${h}%`;
+      heightCommitRef.current = h;
     }
+  }, []);
 
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "default";
-    };
-  }, [isDragging, isResizingConsole]);
+  const onDragMove = React.useCallback((e: MouseEvent) => {
+    pointerRef.current = { x: e.clientX, y: e.clientY };
+    if (rafRef.current == null) rafRef.current = requestAnimationFrame(applyDrag);
+  }, [applyDrag]);
+
+  const endDrag = React.useCallback(() => {
+    window.removeEventListener("mousemove", onDragMove);
+    window.removeEventListener("mouseup", endDrag);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    const mode = dragModeRef.current;
+    dragModeRef.current = null;
+    if (mode === "h") {
+      setIsDragging(false);
+      if (widthCommitRef.current > 0) {
+        const w = widthCommitRef.current;
+        setEditorSettings((s) => ({ ...s, editorWidth: w }));
+        window.localStorage.setItem("leetlab:editorWidth", String(Math.round(w)));
+      }
+    } else if (mode === "v") {
+      setIsResizingConsole(false);
+      if (heightCommitRef.current > 0) {
+        const h = heightCommitRef.current;
+        setConsoleHeight(h);
+        window.localStorage.setItem("leetlab:consoleHeight", String(Math.round(h)));
+      }
+    }
+  }, [onDragMove]);
+
+  const startDrag = React.useCallback(
+    (mode: "h" | "v") => (e: React.MouseEvent) => {
+      if (window.innerWidth < 1024) return;
+      e.preventDefault();
+      dragModeRef.current = mode;
+      widthCommitRef.current = 0;
+      heightCommitRef.current = 0;
+      if (mode === "h") setIsDragging(true);
+      else setIsResizingConsole(true);
+      document.body.style.cursor = "grabbing";
+      document.body.style.userSelect = "none";
+      window.addEventListener("mousemove", onDragMove);
+      window.addEventListener("mouseup", endDrag);
+    },
+    [onDragMove, endDrag]
+  );
+
+  React.useEffect(() => () => endDrag(), [endDrag]);
 
   React.useEffect(() => {
     let cancel = false;
@@ -299,7 +351,9 @@ export default function ProblemDetail() {
       "flex flex-col bg-background",
       isFullscreen ? "fixed inset-0 z-50 h-screen w-screen" : "min-h-screen h-screen"
     )}>
-      <div className={cn(
+      <div
+        ref={containerRef}
+        className={cn(
         "flex-1 flex relative bg-background",
         isMobile ? "flex-col overflow-y-auto overflow-x-hidden" : "flex-row overflow-hidden"
       )}>
@@ -310,6 +364,7 @@ export default function ProblemDetail() {
         {!isFullscreen && (
           <>
             <div
+              ref={leftPanelRef}
               className={cn(
                 "bg-background/40 backdrop-blur-sm shrink-0 flex flex-col",
                 !isDragging && "transition-all duration-300",
@@ -340,21 +395,36 @@ export default function ProblemDetail() {
                       {isProblemSaved ? "Saved" : "Save"}
                     </Button>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  <div className="mt-3 flex flex-wrap gap-1.5">
                     {problem.tags?.map((t) => (
-                      <span key={t} className="rounded bg-muted/40 px-2 py-0.5 font-mono text-[10px] text-muted-foreground border border-border/40">{t}</span>
+                      <span
+                        key={t}
+                        className="inline-flex items-center gap-1 rounded-md bg-primary/5 px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground border border-border/50 transition-colors hover:border-primary/40 hover:text-foreground"
+                      >
+                        <span className="text-primary/60">#</span>{t}
+                      </span>
                     ))}
                   </div>
                 </div>
 
                 <Tabs defaultValue="desc" className="mt-6 flex-1 flex flex-col overflow-hidden">
-                  <TabsList className="w-full justify-start h-10 bg-muted/20 p-1 overflow-x-auto overflow-y-hidden scrollbar-none flex-nowrap shrink-0 border border-border/40 rounded-xl">
-                    <TabsTrigger value="desc" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Description</TabsTrigger>
-                    <TabsTrigger value="examples" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Examples</TabsTrigger>
-                    <TabsTrigger value="hints" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Hints</TabsTrigger>
-                    <TabsTrigger value="ai" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">AI</TabsTrigger>
-                    <TabsTrigger value="subs" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Submissions</TabsTrigger>
-                    <TabsTrigger value="discuss" className="text-[11px] md:text-xs min-w-fit rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">Discuss</TabsTrigger>
+                  <TabsList className="w-full justify-start h-11 gap-1 bg-muted/30 p-1 overflow-x-auto overflow-y-hidden scrollbar-none flex-nowrap shrink-0 border border-border/50 rounded-xl">
+                    {[
+                      { v: "desc", l: "Description" },
+                      { v: "examples", l: "Examples" },
+                      { v: "hints", l: "Hints" },
+                      { v: "ai", l: "AI" },
+                      { v: "subs", l: "Submissions" },
+                      { v: "discuss", l: "Discuss" },
+                    ].map((t) => (
+                      <TabsTrigger
+                        key={t.v}
+                        value={t.v}
+                        className="min-w-fit rounded-lg px-3 text-[11px] md:text-xs font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-primary/20"
+                      >
+                        {t.l}
+                      </TabsTrigger>
+                    ))}
                   </TabsList>
 
                   <div className="flex-1 overflow-y-auto mt-4 scrollbar-thin pr-2">
@@ -368,20 +438,25 @@ export default function ProblemDetail() {
                     </TabsContent>
 
                     <TabsContent value="desc" className="mt-0 space-y-6 animate-in fade-in duration-300">
-                      <div className="prose max-w-none whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 font-sans">
+                      <div className="prose max-w-none whitespace-pre-wrap text-[15px] leading-7 text-foreground/90 font-sans">
                         {problem.description}
                       </div>
                       {problem.constraints && (
-                        <div className="rounded-xl border border-border/60 bg-muted/10 p-4 backdrop-blur-sm">
-                          <h3 className="font-display text-xs font-semibold uppercase tracking-widest text-primary">Constraints</h3>
-                          <pre className="mt-2 whitespace-pre-wrap font-mono text-xs leading-relaxed text-muted-foreground">{problem.constraints}</pre>
+                        <div className="rounded-xl border border-border bg-card/50 p-4 shadow-sm">
+                          <div className="mb-3 flex items-center gap-2">
+                            <span className="grid h-6 w-6 place-items-center rounded-md bg-primary/10 text-primary ring-1 ring-primary/20">
+                              <Scale className="h-3.5 w-3.5" />
+                            </span>
+                            <h3 className="font-display text-xs font-bold uppercase tracking-widest text-primary">Constraints</h3>
+                          </div>
+                          <pre className="whitespace-pre-wrap font-mono text-[13px] leading-relaxed text-foreground/80">{problem.constraints}</pre>
                         </div>
                       )}
-                      
+
                       {/* Placeholder for future detailed stats or info to fill space */}
-                      <div className="pt-10 pb-20 opacity-20 flex flex-col items-center gap-4 select-none">
-                         <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-border to-transparent" />
-                         <span className="text-[10px] font-mono uppercase tracking-[0.3em]">End of Documentation</span>
+                      <div className="pt-10 pb-20 opacity-30 flex flex-col items-center gap-3 select-none">
+                         <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" />
+                         <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">End of Documentation</span>
                       </div>
                     </TabsContent>
 
@@ -442,7 +517,11 @@ export default function ProblemDetail() {
                                   const { submission: fullSub } = await submissionsApi.get(s.id);
                                   setResult(fullSub);
                                   if (consoleHeight < 15) setConsoleHeight(40);
-                                  toast.info(`Viewing submission from ${new Date(s.createdAt!).toLocaleTimeString()}`);
+                                  // Clear any existing toast so the new one plays a fresh enter animation
+                                  toast.dismiss();
+                                  toast.info(`Viewing submission from ${new Date(s.createdAt!).toLocaleTimeString()}`, {
+                                    className: "toast-slide-in",
+                                  });
                                 } catch (err: any) {
                                   toast.error("Failed to load submission details");
                                 }
@@ -482,19 +561,28 @@ export default function ProblemDetail() {
                 </Tabs>
               </div>
             </div>
-            {/* Drag Handle */}
             {/* Drag Handle - Desktop Only */}
             {!isMobile && (
               <div
-                onMouseDown={handleMouseDown}
-                className="w-1.5 h-full cursor-col-resize hover:bg-primary/40 transition-colors bg-border/40 z-10"
-              />
+                onMouseDown={startDrag("h")}
+                className={cn(
+                  "group/handle relative z-10 flex h-full w-1.5 shrink-0 cursor-grab items-center justify-center transition-colors active:cursor-grabbing",
+                  isDragging ? "bg-primary/60" : "bg-border/40 hover:bg-primary/30"
+                )}
+              >
+                <span className="pointer-events-none absolute inset-y-0 -left-1.5 -right-1.5" />
+                <span className={cn(
+                  "pointer-events-none h-8 w-0.5 rounded-full transition-colors",
+                  isDragging ? "bg-primary-foreground/60" : "bg-foreground/20 group-hover/handle:bg-primary/60"
+                )} />
+              </div>
             )}
           </>
         )}
 
         {/* Right: editor + result */}
         <div
+          ref={rightPanelRef}
           className={cn(
             "flex flex-col bg-card shrink-0",
             !isDragging && "transition-all duration-300",
@@ -852,8 +940,9 @@ export default function ProblemDetail() {
           </div>
 
           <div
+            ref={consoleRef}
             className={cn(
-              "relative border-t border-border bg-background/80 backdrop-blur-xl transition-all overflow-hidden flex flex-col shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.3)]",
+              "relative border-t border-border bg-background/80 backdrop-blur-xl overflow-hidden flex flex-col shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.3)]",
               !isResizingConsole && "transition-[height] duration-300",
               result || running ? "" : "h-12"
             )}
@@ -862,9 +951,14 @@ export default function ProblemDetail() {
             {/* Vertical Resize Handle */}
             {(result || running) && (
               <div
-                onMouseDown={handleConsoleMouseDown}
-                className="absolute top-0 left-0 right-0 h-1 cursor-row-resize hover:bg-primary/40 transition-colors z-20"
-              />
+                onMouseDown={startDrag("v")}
+                className="group/vh absolute top-0 left-0 right-0 z-20 flex h-2.5 cursor-grab items-center justify-center active:cursor-grabbing"
+              >
+                <span className={cn(
+                  "h-0.5 w-10 rounded-full transition-all",
+                  isResizingConsole ? "w-16 bg-primary" : "bg-foreground/20 group-hover/vh:bg-primary/60 group-hover/vh:w-16"
+                )} />
+              </div>
             )}
 
             <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-border/40 shrink-0">
@@ -917,57 +1011,76 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
 
 
 
+  const pct = Math.round((passed / (total || 1)) * 100);
+
   return (
-    <div className="mt-3 space-y-6">
+    <div className="mt-3 space-y-5">
       {/* Submission Summary Header */}
       <div className={cn(
-        "rounded-xl border p-4 shadow-sm transition-all",
-        ok ? "border-easy/30 bg-easy/5" : "border-hard/30 bg-hard/5"
+        "relative overflow-hidden rounded-2xl border p-5 shadow-sm transition-all",
+        ok ? "border-easy/30 bg-linear-to-br from-easy/8 to-transparent" : "border-hard/30 bg-linear-to-br from-hard/8 to-transparent"
       )}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        {/* Decorative glow */}
+        <div className={cn(
+          "pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full blur-3xl opacity-20",
+          ok ? "bg-easy" : "bg-hard"
+        )} />
+
+        <div className="relative flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3.5">
             <div className={cn(
-              "p-2 rounded-full",
-              ok ? "bg-easy/20" : "bg-hard/20"
+              "grid h-12 w-12 place-items-center rounded-2xl ring-1 animate-in zoom-in duration-500",
+              ok ? "bg-easy/15 text-easy ring-easy/30" : "bg-hard/15 text-hard ring-hard/30"
             )}>
-              {ok ? <CheckCircle2 className="h-5 w-5 text-easy" /> : <XCircle className="h-5 w-5 text-hard" />}
+              {ok ? <CheckCircle2 className="h-6 w-6" /> : <XCircle className="h-6 w-6" />}
             </div>
             <div>
-              <h3 className={cn("text-lg font-bold tracking-tight", ok ? "text-easy" : "text-hard")}>
+              <h3 className={cn("font-display text-xl font-black tracking-tight leading-none", ok ? "text-easy" : "text-hard")}>
                 {sub.status || "Finished"}
               </h3>
-              <div className="flex items-center gap-3 mt-1">
-                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                  {passed} / {total} Passed
-                </p>
-                <div className="flex h-1.5 w-24 bg-muted rounded-full overflow-hidden border border-border/20">
-                  <div
-                    className={cn("h-full transition-all duration-1000", ok ? "bg-easy shadow-[0_0_8px_rgba(var(--easy),0.5)]" : "bg-hard shadow-[0_0_8px_rgba(var(--hard),0.5)]")}
-                    style={{ width: `${(passed / (total || 1)) * 100}%` }}
-                  />
-                </div>
-              </div>
+              <p className="mt-1.5 text-[11px] font-medium text-muted-foreground">
+                {ok
+                  ? "Nice — your solution cleared every test case."
+                  : `${total - passed} of ${total} test case${total - passed > 1 ? "s" : ""} failed. Review the cases below.`}
+              </p>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1 font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
-            <div className="flex items-center gap-2">
-              <span className="bg-muted px-2 py-0.5 rounded border border-border/40 text-foreground">{sub.language}</span>
-              {sub.time && <span className="bg-muted px-2 py-0.5 rounded border border-border/40 text-foreground">{formatStat(sub.time)}</span>}
-              {sub.memory && <span className="bg-muted px-2 py-0.5 rounded border border-border/40 text-foreground">{formatStat(sub.memory)}</span>}
-            </div>
-            <span>{sub.createdAt ? new Date(sub.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString()}</span>
+          <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            {sub.createdAt ? new Date(sub.createdAt).toLocaleTimeString() : new Date().toLocaleTimeString()}
+          </span>
+        </div>
+
+        {/* Acceptance progress */}
+        <div className="relative mt-4">
+          <div className="mb-1.5 flex items-center justify-between text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            <span>Test cases passed</span>
+            <span className={ok ? "text-easy" : "text-hard"}>{pct}%</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted/60 border border-border/20">
+            <div
+              className={cn("h-full rounded-full transition-all duration-1000 ease-out", ok ? "bg-easy" : "bg-hard")}
+              style={{ width: `${pct}%` }}
+            />
           </div>
         </div>
 
         {/* Compile Error / Stderr */}
         {(sub.compileOutput || sub.stderr) && (
-          <div className="mt-4 rounded-lg bg-hard/10 border border-hard/20 p-3">
+          <div className="relative mt-4 rounded-lg bg-hard/10 border border-hard/20 p-3">
             <p className="text-[10px] font-bold text-hard uppercase tracking-widest mb-1">Error Trace</p>
             <pre className="whitespace-pre-wrap font-mono text-xs text-hard leading-relaxed">
               {sub.compileOutput || sub.stderr}
             </pre>
           </div>
         )}
+      </div>
+
+      {/* Stat cards — LeetCode-style submission insights */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <ResultStat icon={Clock} label="Runtime" value={sub.time ? formatStat(sub.time) : "n/a"} hint="Execution time" />
+        <ResultStat icon={Zap} label="Memory" value={sub.memory ? formatStat(sub.memory) : "n/a"} hint="Peak usage" />
+        <ResultStat icon={ListChecks} label="Test Cases" value={`${passed}/${total}`} hint={ok ? "All passed" : `${total - passed} failed`} accent={ok ? "easy" : "hard"} />
+        <ResultStat icon={Code2} label="Language" value={sub.language} hint="Runtime env" />
       </div>
 
       {/* Detailed Test Cases */}
@@ -1098,6 +1211,36 @@ function ResultPanel({ sub, problem }: { sub: Submission; problem: Problem }) {
           })()}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ResultStat({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  accent,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  hint?: string;
+  accent?: "easy" | "hard";
+}) {
+  return (
+    <div className="group rounded-xl border border-border bg-card/60 p-3.5 transition-all hover:border-primary/30 hover:shadow-[0_8px_24px_-18px_var(--glow)]">
+      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </div>
+      <div className={cn(
+        "mt-2 truncate font-mono text-base font-bold leading-none",
+        accent === "easy" ? "text-easy" : accent === "hard" ? "text-hard" : "text-foreground"
+      )}>
+        {value}
+      </div>
+      {hint && <div className="mt-1.5 text-[10px] text-muted-foreground/70">{hint}</div>}
     </div>
   );
 }

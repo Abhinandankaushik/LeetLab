@@ -5,7 +5,7 @@
 @custom-variant dark (&:is([data-theme="dark"] *));
 
 @theme inline {
-  --font-sans: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --radius-sm: calc(var(--radius) - 4px);
@@ -128,7 +128,21 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-weight: 450;
+    letter-spacing: -0.005em;
     transition: background-color 0.4s ease, color 0.4s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Keep code/labels crisp in the mono face */
+  code,
+  pre,
+  kbd,
+  samp,
+  .font-mono {
+    font-feature-settings: "liga" 0, "calt" 0;
   }
 
   /* Soft ambient colour wash so neither theme feels flat */
@@ -734,6 +748,88 @@
     opacity: 1;
   }
 
+  /* ===== Glitchy animated grid (home hero background) ===== */
+  @keyframes gg-pan {
+    to {
+      background-position: 44px 44px, 44px 44px;
+    }
+  }
+
+  @keyframes gg-flicker {
+    0%, 88%, 100% { opacity: 0.55; }
+    89% { opacity: 0.18; }
+    90% { opacity: 0.75; }
+    92% { opacity: 0.3; }
+    94% { opacity: 0.62; }
+    96% { opacity: 0.22; }
+    98% { opacity: 0.6; }
+  }
+
+  @keyframes gg-slice {
+    0%, 84%, 100% { transform: translate3d(0, 0, 0); clip-path: inset(0 0 0 0); opacity: 0; }
+    85% { transform: translate3d(-7px, 0, 0); clip-path: inset(18% 0 62% 0); opacity: 0.8; }
+    88% { transform: translate3d(9px, 0, 0); clip-path: inset(54% 0 22% 0); opacity: 0.65; }
+    91% { transform: translate3d(-5px, 0, 0); clip-path: inset(74% 0 8% 0); opacity: 0.7; }
+    94% { transform: translate3d(4px, 0, 0); clip-path: inset(8% 0 80% 0); opacity: 0.6; }
+    96% { transform: translate3d(0, 0, 0); clip-path: inset(0 0 0 0); opacity: 0; }
+  }
+
+  @keyframes gg-scan {
+    0% { transform: translateY(-120%); }
+    100% { transform: translateY(120%); }
+  }
+
+  .grid-glitch {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+    -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 28%, #000 30%, transparent 78%);
+    mask-image: radial-gradient(ellipse 85% 75% at 50% 28%, #000 30%, transparent 78%);
+  }
+
+  /* Base grid + a screen-blended chromatic layer that glitch-slices */
+  .grid-glitch::before,
+  .grid-glitch::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--primary) 24%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--primary) 24%, transparent) 1px, transparent 1px);
+    background-size: 44px 44px;
+    will-change: opacity, transform, background-position;
+  }
+
+  .grid-glitch::before {
+    animation: gg-pan 7s linear infinite, gg-flicker 6s steps(1) infinite;
+  }
+
+  .grid-glitch::after {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--accent) 32%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--accent) 32%, transparent) 1px, transparent 1px);
+    mix-blend-mode: screen;
+    animation: gg-pan 7s linear infinite reverse, gg-slice 5.5s steps(1) infinite;
+  }
+
+  /* Sweeping scanline highlight */
+  .grid-glitch-scan {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 22%;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in oklab, var(--primary) 14%, transparent),
+      transparent
+    );
+    animation: gg-scan 7s linear infinite;
+    will-change: transform;
+  }
+
   /* Animated conic gradient border (wrap content in a child) */
   .animated-border {
     position: relative;
@@ -777,4 +873,24 @@
 
 .prose-invert {
   color: var(--foreground);
+}
+
+/* Toast: slide in from the side (overrides sonner's subtle default) */
+@keyframes toast-slide-in {
+  0% {
+    transform: translateX(115%);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-4px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+[data-sonner-toast].toast-slide-in {
+  animation: toast-slide-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

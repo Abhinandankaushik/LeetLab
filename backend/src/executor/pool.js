@@ -1,4 +1,4 @@
-import { docker, ensureImage } from "./docker.client.js";
+import { docker, ensureImage, prepareTimeImage } from "./docker.client.js";
 import { POOL_DEFS } from "./languages.js";
 
 const LABEL = "leetlab-executor";
@@ -25,8 +25,10 @@ const containerSecurity = () => ({
 export class ContainerPool {
     constructor(poolName, { image, size }) {
         this.poolName = poolName;
-        this.image = image;
+        this.baseImage = image;
+        this.image = image; // may be swapped for a memory-instrumented derived image
         this.size = size;
+        this.hasTime = false; // whether /usr/bin/time is available for memory measurement
         this.idle = []; // ready containers
         this.all = new Set(); // every container we manage
         this.waiters = []; // resolvers waiting for a free container
@@ -38,7 +40,11 @@ export class ContainerPool {
         if (this.initialized) return;
         if (this.initPromise) return this.initPromise;
         this.initPromise = (async () => {
-            console.log(`🐳 [executor] preparing pool "${this.poolName}" (${this.image} x${this.size})`);
+            console.log(`🐳 [executor] preparing pool "${this.poolName}" (${this.baseImage} x${this.size})`);
+            // Build/reuse a derived image with GNU `time` so we can measure memory.
+            const prepared = await prepareTimeImage(this.baseImage);
+            this.image = prepared.image;
+            this.hasTime = prepared.hasTime;
             await ensureImage(this.image);
             await this._cleanupStale();
             for (let i = 0; i < this.size; i++) {

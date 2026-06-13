@@ -204,12 +204,24 @@ function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   return (
     <RRNavLink
       to={to}
+      end={to === "/"}
       className={({ isActive }) =>
-        `rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground ${isActive ? "text-foreground bg-muted" : "text-muted-foreground"
-        }`
+        cn(
+          "relative rounded-lg px-3 py-1.5 text-sm transition-all duration-200",
+          isActive
+            ? "font-semibold text-primary bg-primary/10 ring-1 ring-inset ring-primary/30 shadow-[0_0_18px_-7px_var(--glow)]"
+            : "font-medium text-muted-foreground hover:text-foreground hover:bg-muted/70"
+        )
       }
     >
-      {children}
+      {({ isActive }) => (
+        <span className="relative flex items-center">
+          {children}
+          {isActive && (
+            <span className="pointer-events-none absolute bottom-[-9px] left-1/2 h-0.5 w-5 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_8px_var(--primary)]" />
+          )}
+        </span>
+      )}
     </RRNavLink>
   );
 }

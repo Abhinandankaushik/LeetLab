@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Maximize2, Minimize2, Play, Pause, RotateCcw, Settings, Type, Palette, Layout, Code2, Trophy, Timer } from "lucide-react";
+import { Maximize2, Minimize2, Play, Pause, RotateCcw, Settings, Type, Palette, Layout, Code2, Trophy, Timer, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -117,17 +117,31 @@ export function EditorToolbar({
           <>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 gap-2 font-mono text-xs hover:bg-primary/10">
-                  <Layout className="h-3.5 w-3.5" />
+                <Button variant="ghost" size="sm" className="h-8 gap-2 font-mono text-xs font-semibold hover:bg-primary/10 data-[state=open]:bg-primary/10 data-[state=open]:text-primary">
+                  <Layout className="h-3.5 w-3.5 text-primary" />
                   {activeLang.name}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-40">
-                {languages.map((l) => (
-                  <DropdownMenuItem key={l.id} onClick={() => onLangChange(l)}>
-                    {l.name}
-                  </DropdownMenuItem>
-                ))}
+              <DropdownMenuContent align="start" className="w-44 p-1">
+                {languages.map((l) => {
+                  const isActive = activeLang?.id === l.id;
+                  return (
+                    <DropdownMenuItem
+                      key={l.id}
+                      onClick={() => onLangChange(l)}
+                      className={cn(
+                        "cursor-pointer gap-2 rounded-md font-medium transition-colors",
+                        isActive
+                          ? "bg-primary/10 text-primary focus:bg-primary/15 focus:text-primary data-highlighted:bg-primary/15 data-highlighted:text-primary"
+                          : "text-muted-foreground focus:bg-muted focus:text-foreground data-highlighted:bg-muted data-highlighted:text-foreground"
+                      )}
+                    >
+                      <span className={cn("h-1.5 w-1.5 rounded-full transition-colors", isActive ? "bg-primary" : "bg-muted-foreground/40")} />
+                      <span className="flex-1">{l.name}</span>
+                      {isActive && <Check className="h-3.5 w-3.5" />}
+                    </DropdownMenuItem>
+                  );
+                })}
               </DropdownMenuContent>
             </DropdownMenu>
 

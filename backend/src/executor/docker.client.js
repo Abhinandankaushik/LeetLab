@@ -78,14 +78,14 @@ export const execInContainer = async (container, cmd, { hardTimeoutMs = 30000 } 
     return { exitCode, stdout: out.value(), stderr: err.value() };
 };
 
+const imageExists = async (image) => {
+    const images = await docker.listImages();
+    return images.some((img) => (img.RepoTags || []).includes(image));
+};
+
 /** Pull an image if it isn't present locally. Resolves when the pull finishes. */
 export const ensureImage = async (image) => {
-    const images = await docker.listImages();
-    const present = images.some((img) =>
-        (img.RepoTags || []).includes(image) ||
-        (img.RepoTags || []).some((t) => t === image)
-    );
-    if (present) return;
+    if (await imageExists(image)) return;
 
     await new Promise((resolve, reject) => {
         docker.pull(image, (err, stream) => {
@@ -95,4 +95,53 @@ export const ensureImage = async (image) => {
             );
         });
     });
+};
+
+/**
+ * Build (once) a derived image that has the GNU `time` binary (`/usr/bin/time`)
+ * installed, so we can measure peak memory of each run via `time -v`.
+ *
+ * Why a derived image: warm containers run with NetworkMode:"none", so we can't
+ * `apt-get install` at run time. Instead we do a one-time, network-enabled
+ * install in a throwaway container and `commit` it to a local image tag. All our
+ * base images are Debian/Ubuntu based, so a single apt command works for all.
+ *
+ * Best-effort: if anything fails (e.g. no network during prep), we fall back to
+ * the base image and memory measurement is simply skipped (reported as null).
+ *
+ * @returns {Promise<{ image: string, hasTime: boolean }>}
+ */
+export const prepareTimeImage = async (baseImage) => {
+    const derived = `leetlab-exec:${baseImage.replace(/[/:]/g, "-")}`;
+
+    try {
+        if (await imageExists(derived)) return { image: derived, hasTime: true };
+
+        await ensureImage(baseImage);
+
+        const installCmd =
+            "apt-get update && apt-get install -y --no-install-recommends time && rm -rf /var/lib/apt/lists/*";
+        const tmp = await docker.createContainer({
+            Image: baseImage,
+            Cmd: ["sh", "-c", installCmd],
+            HostConfig: { NetworkMode: "bridge" }, // network needed only for this prep step
+        });
+        await tmp.start();
+        const { StatusCode } = await tmp.wait();
+
+        if (StatusCode !== 0) {
+            await tmp.remove({ force: true }).catch(() => {});
+            console.warn(`[executor] could not install 'time' in ${baseImage}; memory will be unavailable`);
+            return { image: baseImage, hasTime: false };
+        }
+
+        const [repo, tag] = derived.split(":");
+        await tmp.commit({ repo, tag });
+        await tmp.remove({ force: true }).catch(() => {});
+        console.log(`🧮 [executor] built memory-instrumented image ${derived}`);
+        return { image: derived, hasTime: true };
+    } catch (e) {
+        console.warn(`[executor] time-image prep failed for ${baseImage}: ${e.message}; memory disabled`);
+        return { image: baseImage, hasTime: false };
+    }
 };

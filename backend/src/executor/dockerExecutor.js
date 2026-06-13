@@ -20,6 +20,12 @@ const STATUS = {
 const sh = (command) => ["sh", "-c", command];
 const wrapTimeout = (seconds, command) => `timeout -s KILL ${seconds} ${command}`;
 
+// Parse "Maximum resident set size (kbytes): N" out of GNU `time -v` output.
+const parseMaxRssKb = (text) => {
+    const m = /Maximum resident set size \(kbytes\):\s*(\d+)/.exec(text || "");
+    return m ? Number(m[1]) : null;
+};
+
 // Encode arbitrary text so it can be embedded safely in a shell command and
 // reconstructed inside the container without any quoting/escaping pitfalls.
 const b64 = (str) => Buffer.from(str ?? "", "utf-8").toString("base64");
@@ -57,6 +63,7 @@ export const runSubmissions = async ({ source_code, language_id, testcases }) =>
     const pool = await getPool(config.poolName);
     const container = await pool.acquire();
     const workdir = `/tmp/sub-${randomUUID()}`;
+    const memFile = "mem.txt";
     let recycled = false;
 
     try {
@@ -85,12 +92,18 @@ export const runSubmissions = async ({ source_code, language_id, testcases }) =>
         //    a file and fed via stdin redirection (no hijacked-stdin streaming).
         const details = [];
         for (const testcase of testcases) {
+            // When the pool's image has GNU time, wrap the program so we capture
+            // peak RSS into mem.txt (kept out of the program's own stdout/stderr).
+            const runner = pool.hasTime
+                ? `/usr/bin/time -v -o ${memFile} ${config.run}`
+                : config.run;
+
             const started = Date.now();
             const run = await execInContainer(
                 container,
                 sh(
                     `cd ${workdir} && echo '${b64(testcase.input ?? "")}' | base64 -d > input.txt && ` +
-                    `${wrapTimeout(RUN_TIMEOUT_S, config.run)} < input.txt`
+                    `${wrapTimeout(RUN_TIMEOUT_S, runner)} < input.txt`
                 ),
                 { hardTimeoutMs: (RUN_TIMEOUT_S + 5) * 1000 }
             );
@@ -108,6 +121,16 @@ export const runSubmissions = async ({ source_code, language_id, testcases }) =>
                 judgeStatus = STATUS.RUNTIME_ERROR;
             }
 
+            // Read peak memory (only meaningful when the program actually ran).
+            let memory = null;
+            if (pool.hasTime && judgeStatus.id === 3) {
+                const memRead = await execInContainer(
+                    container,
+                    sh(`cat ${workdir}/${memFile} 2>/dev/null`)
+                ).catch(() => ({ stdout: "" }));
+                memory = parseMaxRssKb(memRead.stdout);
+            }
+
             const isPassed = judgeStatus.id === 3 && stdout.trim() === expected.trim();
 
             details.push({
@@ -118,7 +141,7 @@ export const runSubmissions = async ({ source_code, language_id, testcases }) =>
                 stderr: run.stderr || null,
                 compileOutput: null,
                 judgeStatus: isPassed ? STATUS.ACCEPTED : judgeStatus.id === 3 ? STATUS.WRONG : judgeStatus,
-                memory: null,
+                memory,
                 time: Number(elapsed.toFixed(3)),
             });
         }
