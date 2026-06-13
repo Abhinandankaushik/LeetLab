@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "format": "prettier --write ."
   },
+  
   "dependencies": {
     "@clerk/clerk-react": "^5.61.8",
     "@hookform/resolvers": "^5.2.2",

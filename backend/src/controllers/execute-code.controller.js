@@ -1,14 +1,12 @@
-import { submitBatch, pollBatchResults, getLanguageName, runSubmissions } from "../libs/judge0.lib.js";
-import { db } from "../libs/db.js"
-import { updateUserActivity, updateUserStreak } from "../libs/activity.lib.js";
+import { db } from "../libs/db.js";
+import { processExecution } from "../libs/execution.service.js";
+import { enqueueExecution, isQueueEnabled } from "../libs/queue.js";
 
 export const excutecode = async (req, res) => {
 
     try {
 
         const { source_code, language_id, expected_outputs, stdin, problemId, isSubmit, contestId } = req.body;
-
-
 
         const userId = req.user.id;
 
@@ -67,219 +65,42 @@ export const excutecode = async (req, res) => {
             }
         }
 
-        // 2. Prepare test cases (fetch from DB to prevent leaking secrets to frontend)
+        // Prepare test cases (fetch from DB to prevent leaking secrets to frontend)
         let testcasesToRun = [];
 
         if (isSubmit || (!stdin && !expected_outputs)) {
-            // Use hidden test cases from DB for submission or full run
             testcasesToRun = problem.testcases.map(t => ({
-
                 input: t.input,
                 expectedOutput: t.output
             }));
-
         } else {
-            // Use custom test cases provided by user for "Run"
             testcasesToRun = stdin.map((input, index) => ({
                 input,
                 expectedOutput: expected_outputs[index]
             }));
         }
 
-
-
-        console.log(`🚀 Executing ${testcasesToRun.length} test cases for problem: ${problem.title}`);
-
-        // 3. Send and Evaluate submissions using the pipeline
-        const result = await runSubmissions({
-            source_code: source_code,
+        // Everything the (queued) executor needs — no req/res, so it can run in a worker.
+        const payload = {
+            userId,
+            role: req.user.role,
+            source_code,
             language_id,
-            testcases: testcasesToRun
-        });
+            problemId,
+            isSubmit: Boolean(isSubmit),
+            contestId: contestId || null,
+            testcasesToRun,
+            examples: problem.examples,
+        };
 
+        // Heavy work runs through a bounded-concurrency queue so simultaneous
+        // submissions can't overwhelm Judge0 / the server. Falls back to inline
+        // execution when the queue is disabled (e.g. local dev without Redis).
+        const result = isQueueEnabled
+            ? await enqueueExecution(payload)
+            : await processExecution(payload);
 
-
-        const allPassed = result.status === "Accepted";
-
-
-        // Map pipeline details back to the controller's format
-        const detailedResults = result.details.map((detail, index) => {
-            return {
-                testCase: index + 1,
-                passed: detail.status === "Passed",
-                stdout: detail.output,
-                stdin: detail.input,
-                expected: detail.expected,
-                stderr: detail.stderr || null,
-                compileOutput: detail.compileOutput || null,
-                status: detail.judgeStatus.description,
-                memory: detail.memory ? `${detail.memory} KB` : undefined,
-                time: detail.time ? `${detail.time} s` : undefined,
-            };
-        });
-
-        if (!isSubmit) {
-            // If just "Run", don't save to DB, just return results
-            return res.status(200).json({
-                success: true,
-                message: "code executed successfully",
-                submission: {
-                    status: allPassed ? "Accepted" : "Wrong Answer",
-                    language: getLanguageName(language_id),
-                    testCases: detailedResults
-                },
-            })
-        }
-
-        // If "Submit", store submission summary in database
-        const submissionData = await db.submission.create({
-            data: {
-                userId,
-                problemId,
-                sourceCode: { code: source_code }, // Wrap in object for Prisma JSON
-                language: getLanguageName(language_id),
-                stdin: testcasesToRun.map(t => t.input).join("\n"),
-                stdout: JSON.stringify(detailedResults.map((r) => r.stdout)),
-                stderr: detailedResults.some((r) => r.stderr) ? JSON.stringify(detailedResults.map((r) => r.stderr)) : null,
-                compileOutput: detailedResults.some((r) => r.compileOutput) ? JSON.stringify(detailedResults.map((r) => r.compileOutput)) : null,
-                status: allPassed ? "Accepted" : "Wrong Answer",
-                memory: detailedResults.some((r) => r.memory) ? JSON.stringify(detailedResults.map((r) => r.memory)) : null,
-                time: detailedResults.some((r) => r.time) ? JSON.stringify(detailedResults.map((r) => r.time)) : null,
-                contestId: contestId || null,
-            }
-        });
-
-        //if All passed = true mark problem as solved for the current user
-        if (allPassed) {
-            await db.problemSolved.upsert({
-                where: {
-                    userId_problemId: {
-                        userId, problemId
-                    }
-                },
-                update: {},
-                create: {
-                    userId, problemId
-                }
-            });
-
-            // Update streak on successful solve
-            await updateUserStreak(userId);
-        }
-
-        // Update activity heatmap for any submission attempt
-        await updateUserActivity(userId);
-
-        //save individual test case results in db-->testCase
-        const testCaseResults = detailedResults.map((result) => ({
-            submissionId: submissionData.id,
-            testCase: result.testCase,
-            passed: result.passed,
-            stdout: result.stdout,
-            stdin: result.stdin,
-            expected: result.expected,
-            stderr: result.stderr,
-            compileOutput: result.compileOutput,
-            status: result.status,
-            memory: result.memory,
-            time: result.time,
-        }))
-
-
-        await db.testCaseResult.createMany({
-            data: testCaseResults
-        })
-
-        //
-        const submissionWithTestCase = await db.submission.findUnique({
-            where: {
-                id: submissionData.id
-            },
-            include: {
-                testCases: true
-            }
-        })
-
-
-        // ================== FINAL SANITIZATION LOGIC ==================
-
-        const totalCount = testcasesToRun.length;
-        const passedCount = detailedResults.filter(r => r.passed).length;
-
-        // 🔥 Strong normalization (VERY IMPORTANT)
-        const normalize = (s) =>
-            String(s ?? "")
-                .replace(/\r\n/g, "\n")
-                .replace(/\s+/g, " ")
-                .trim();
-
-        // Extract examples safely
-        const examples = Array.isArray(problem.examples)
-            ? problem.examples
-            : problem.examples
-                ? Object.values(problem.examples)
-                : [];
-
-        // 🔥 Create normalized example input set
-        const exampleInputs = new Set(
-            examples.map(ex => normalize(ex.input))
-        );
-
-
-        // ================== FILTERING ==================
-        const isAdmin = req.user.role === "ADMIN";
-        const publicTestCases = [];
-        let hiddenPassedCount = 0;
-        let hiddenFailedCount = 0;
-
-        detailedResults.forEach((res) => {
-            const normalizedInput = normalize(res.stdin);
-
-            // 🔥 RULE: if exists in examples OR user is admin → ALWAYS show
-            const isExample = exampleInputs.has(normalizedInput);
-
-            if (isAdmin || isExample) {
-                publicTestCases.push({
-                    ...res,
-                    type: isExample ? "EXAMPLE" : "HIDDEN (ADMIN VIEW)"
-                });
-            } else {
-                // hidden testcase → only count
-                if (res.passed) hiddenPassedCount++;
-                else hiddenFailedCount++;
-            }
-        });
-
-
-
-        // ================== FINAL RESPONSE ==================
-
-        return res.status(200).json({
-            success: true,
-            message: isSubmit
-                ? "code submitted successfully"
-                : "code executed successfully",
-
-            submission: {
-                ...(submissionWithTestCase || {
-                    status: allPassed ? "Accepted" : "Wrong Answer",
-                    language: getLanguageName(language_id),
-                }),
-
-                // 🔥 ONLY example testcases sent (unless admin)
-                testCases: publicTestCases,
-
-                // 🔥 hidden summary only (unless admin)
-                hiddenPassedCount: isAdmin ? 0 : hiddenPassedCount,
-                hiddenFailedCount: isAdmin ? 0 : hiddenFailedCount,
-                totalHiddenCases: isAdmin ? 0 : (hiddenPassedCount + hiddenFailedCount)
-            },
-
-            // 🔥 overall stats
-            totalCount,
-            passedCount
-        });
-
+        return res.status(200).json(result);
 
     }
     catch (error) {
@@ -288,6 +109,6 @@ export const excutecode = async (req, res) => {
             success: false,
             message: "Error while executing code",
             error: error.message,
-        })
+        });
     }
 }

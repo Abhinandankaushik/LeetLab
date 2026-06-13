@@ -7,7 +7,6 @@ import React, { useEffect, useRef } from "react";
  *   always matches dark/light mode instead of a hard-coded hue.
  * - Particles softly drift, link to nearby neighbours, and react to the cursor
  *   (connection lines + a gentle parallax push near the pointer).
- * - Fully disabled when the user prefers reduced motion.
  */
 export const InteractiveBackground: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -17,8 +16,6 @@ export const InteractiveBackground: React.FC = () => {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     /** Resolve a CSS custom property to an {r,g,b} triple via the canvas colour parser. */
     const resolveRGB = (varName: string, fallback: [number, number, number]): [number, number, number] => {
@@ -150,12 +147,6 @@ export const InteractiveBackground: React.FC = () => {
       }
     };
 
-    const renderStatic = () => {
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-      particles.forEach((p) => p.draw());
-      drawConnections();
-    };
-
     const animate = () => {
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
       particles.forEach((p) => {
@@ -172,22 +163,17 @@ export const InteractiveBackground: React.FC = () => {
       mouse.active = true;
     };
     const onMouseLeave = () => { mouse.active = false; };
-    const onResize = () => { init(); if (reduceMotion) renderStatic(); };
+    const onResize = () => { init(); };
     const onThemeChange = () => {
       primary = resolveRGB("--primary", primary);
       accent = resolveRGB("--accent", accent);
       particles.forEach((p) => { p.hue = Math.random() > 0.5 ? primary : accent; });
-      if (reduceMotion) renderStatic();
     };
 
     init();
-    if (reduceMotion) {
-      renderStatic();
-    } else {
-      animate();
-      window.addEventListener("mousemove", onMouseMove, { passive: true });
-      window.addEventListener("mouseout", onMouseLeave);
-    }
+    animate();
+    window.addEventListener("mousemove", onMouseMove, { passive: true });
+    window.addEventListener("mouseout", onMouseLeave);
     window.addEventListener("resize", onResize);
 
     const themeObserver = new MutationObserver(onThemeChange);

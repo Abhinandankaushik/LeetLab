@@ -253,14 +253,12 @@
     stroke-opacity: 0.3;
   }
 
+  /* Decorative animations are core to this product's look, so we intentionally
+     keep them running even when the OS requests reduced motion. We only relax
+     smooth-scrolling, which is the part that actually causes motion discomfort. */
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
+    html {
+      scroll-behavior: auto;
     }
   }
 }

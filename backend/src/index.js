@@ -17,6 +17,7 @@ import contestRoute from "./routes/contest.routes.js";
 import analyticsRoute from "./routes/analytics.routes.js";
 import aiRoute from "./routes/ai.routes.js";
 import ratingRoute from "./routes/rating.routes.js";
+import { startExecutionWorker } from "./workers/execution.worker.js";
 dotenv.config();
 
 const app = express();
@@ -49,6 +50,10 @@ app.use("/api/v1/contests", contestRoute);
 app.use("/api/v1/analytics", analyticsRoute);
 app.use("/api/v1/ai", aiRoute);
 app.use("/api/v1/ratings", ratingRoute);
+
+// Start the in-process code-execution worker (bounded concurrency). No-op when
+// QUEUE_ENABLED=false.
+startExecutionWorker();
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
