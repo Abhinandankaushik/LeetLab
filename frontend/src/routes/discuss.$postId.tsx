@@ -1,13 +1,14 @@
 import * as React from "react";
 import { useParams, Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { discussApi } from "@/lib/api";
+import { discussApi, type DiscussComment } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useRealtimeRoom } from "@/lib/use-realtime-room";
 import { 
   ArrowLeft, ArrowUp, ThumbsDown, Eye, MessageSquare, 
   Loader2, Send, Share2, Bookmark, Clock, User, 
   TrendingUp, Award, ShieldCheck, Flame, ChevronDown, 
-  MoreVertical, Sparkles, Trash2
+  MoreVertical, Sparkles, Trash2, Users
 } from "lucide-react";
 import { EmptyState, ErrorState, DetailSkeleton } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -45,14 +46,55 @@ export default function PostDetail() {
 
   const [comment, setComment] = React.useState("");
   const [voting, setVoting] = React.useState(false);
+  const [online, setOnline] = React.useState(0);
+  const [typingName, setTypingName] = React.useState<string | null>(null);
+  const typingTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lastTypingSent = React.useRef(0);
+
+  const upsertComment = React.useCallback((c: DiscussComment) => {
+    qc.setQueryData<{ comments: DiscussComment[] }>(["discuss-comments", postId], (old) => {
+      const list = old?.comments ?? [];
+      if (list.some((x) => x.id === c.id)) {
+        return { comments: list.map((x) => (x.id === c.id ? { ...x, ...c } : x)) };
+      }
+      return { comments: [...list, c] };
+    });
+  }, [qc, postId]);
+
+  const room = useRealtimeRoom(postId, {
+    onComment: (c) => upsertComment(c),
+    onDeleteComment: (commentId) => {
+      qc.setQueryData<{ comments: DiscussComment[] }>(["discuss-comments", postId], (old) =>
+        old ? { comments: old.comments.filter((x) => x.id !== commentId) } : old
+      );
+    },
+    onVote: (commentId, votes) => {
+      qc.setQueryData<{ comments: DiscussComment[] }>(["discuss-comments", postId], (old) =>
+        old
+          ? { comments: old.comments.map((x) => (x.id === commentId ? { ...x, upvotes: votes.upvotes, downvotes: votes.downvotes } : x)) }
+          : old
+      );
+    },
+    onPresence: (count) => setOnline(count),
+    onTyping: (u) => {
+      setTypingName(u?.name || "Someone");
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      typingTimer.current = setTimeout(() => setTypingName(null), 2500);
+    },
+  });
+
+  React.useEffect(() => () => { if (typingTimer.current) clearTimeout(typingTimer.current); }, []);
 
   const commentMut = useMutation({
     mutationFn: (content: string) => discussApi.comment(postId!, content),
-    onSuccess: () => {
+    onSuccess: (data) => {
       setComment("");
       toast.success("Intelligence shared with the collective.");
+      if (data?.comment) {
+        upsertComment(data.comment);
+        room.sendComment(data.comment);
+      }
       qc.invalidateQueries({ queryKey: ["discuss-post", postId] });
-      qc.invalidateQueries({ queryKey: ["discuss-comments", postId] });
     },
     onError: (e: any) => toast.error(e?.message || "Broadcast failed.")
   });
@@ -71,8 +113,9 @@ export default function PostDetail() {
   const voteComment = async (commentId: string, type: "UPVOTE" | "DOWNVOTE") => {
     if (!user) { toast.error("Authenticate to influence the grid."); return; }
     try {
-      await discussApi.voteComment(commentId, type);
+      const res = await discussApi.voteComment(commentId, type);
       qc.invalidateQueries({ queryKey: ["discuss-comments", postId] });
+      if (res?.votes) room.sendVote(commentId, res.votes);
     } catch (e: any) {
       toast.error(e?.message || "Transmission error.");
     }
@@ -95,6 +138,7 @@ export default function PostDetail() {
       await discussApi.removeComment(id);
       toast.success("Thought silenced.");
       qc.invalidateQueries({ queryKey: ["discuss-comments", postId] });
+      room.sendDeleteComment(id);
     } catch (e: any) {
       toast.error("Failed to silence.");
     }
@@ -281,10 +325,17 @@ export default function PostDetail() {
              {/* Comments Section */}
              <div className="mt-24 space-y-10">
                 <div className="flex items-center justify-between border-b border-border pb-6">
-                   <h2 className="font-display text-3xl font-black tracking-tighter flex items-center gap-4">
-                      <MessageSquare className="h-8 w-8 text-primary" />
-                      {post._count?.comments ?? comments.length} <span className="text-muted-foreground">Thoughts</span>
-                   </h2>
+                   <div className="flex items-center gap-4">
+                      <h2 className="font-display text-3xl font-black tracking-tighter flex items-center gap-4">
+                         <MessageSquare className="h-8 w-8 text-primary" />
+                         {post._count?.comments ?? comments.length} <span className="text-muted-foreground">Thoughts</span>
+                      </h2>
+                      <div className="flex items-center gap-1.5 rounded-full border border-border bg-card/40 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                         <span className={cn("h-2 w-2 rounded-full", room.connected ? "bg-primary animate-pulse" : "bg-muted-foreground/40")} />
+                         <Users className="h-3 w-3" />
+                         {online > 0 ? online : 1} live
+                      </div>
+                   </div>
                    <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                          <Button variant="ghost" className="rounded-xl border border-border bg-card/30 gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground">
@@ -388,10 +439,20 @@ export default function PostDetail() {
                   >
                     <Textarea
                       value={comment}
-                      onChange={(e) => setComment(e.target.value)}
+                      onChange={(e) => {
+                        setComment(e.target.value);
+                        const now = Date.now();
+                        if (user && now - lastTypingSent.current > 1500) {
+                          lastTypingSent.current = now;
+                          room.sendTyping({ id: user.id, name: user.name || "Someone" });
+                        }
+                      }}
                       placeholder="Contribute to the collective intelligence..."
                       className="min-h-[160px] bg-transparent border-none focus-visible:ring-0 p-0 text-lg leading-relaxed placeholder:text-muted-foreground resize-none"
                     />
+                    {typingName && (
+                      <p className="mt-2 text-[11px] italic text-muted-foreground animate-in fade-in">{typingName} is typing...</p>
+                    )}
                     <div className="mt-6 flex justify-end">
                       <Button type="submit" disabled={commentMut.isPending || !comment.trim()} className="h-12 px-10 rounded-2xl font-black uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
                         {commentMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-3" /> : <Send className="h-4 w-4 mr-3" />}

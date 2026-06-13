@@ -7,6 +7,7 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
+import { useRealtimeRoom } from "@/lib/use-realtime-room";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +15,7 @@ import { DifficultyBadge } from "@/components/difficulty-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AICodePanel } from "@/components/ai-code-panel";
 import { EditorToolbar } from "@/components/EditorToolbar";
-import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Send, ShieldAlert, ShieldCheck, Trash2, Scale, Clock, Zap, ListChecks, Code2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, Loader2, ThumbsUp, ThumbsDown, Send, ShieldAlert, ShieldCheck, Trash2, Scale, Clock, Zap, ListChecks, Code2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Bookmark } from "lucide-react";
@@ -1243,7 +1244,46 @@ function DiscussionPanel({ problemId, discussion, setDiscussion }: { problemId: 
   const { user } = useAuth();
   const [content, setContent] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [online, setOnline] = React.useState(0);
+  const [typingName, setTypingName] = React.useState<string | null>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const typingTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lastTypingSent = React.useRef(0);
+
+  const room = useRealtimeRoom(discussion?.id, {
+    onComment: (comment) => {
+      setDiscussion((prev: any) => {
+        if (!prev) return prev;
+        const existing = prev.comments || [];
+        if (existing.some((c: any) => c.id === comment.id)) return prev;
+        return { ...prev, comments: [...existing, comment] };
+      });
+    },
+    onDeleteComment: (commentId) => {
+      setDiscussion((prev: any) =>
+        prev ? { ...prev, comments: (prev.comments || []).filter((c: any) => c.id !== commentId) } : prev
+      );
+    },
+    onVote: (commentId, votes) => {
+      setDiscussion((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              comments: (prev.comments || []).map((c: any) =>
+                c.id === commentId ? { ...c, upvotes: votes.upvotes, downvotes: votes.downvotes } : c
+              ),
+            }
+          : prev
+      );
+    },
+    onPresence: (count) => setOnline(count),
+    onTyping: (u) => {
+      setTypingName(u?.name || "Someone");
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      typingTimer.current = setTimeout(() => setTypingName(null), 2500);
+    },
+  });
 
   // Auto-expand logic
   React.useEffect(() => {
@@ -1252,6 +1292,13 @@ function DiscussionPanel({ problemId, discussion, setDiscussion }: { problemId: 
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [content]);
+
+  // Auto-scroll to the newest message.
+  React.useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [discussion?.comments?.length]);
+
+  React.useEffect(() => () => { if (typingTimer.current) clearTimeout(typingTimer.current); }, []);
 
   if (!discussion) {
     return (
@@ -1271,10 +1318,8 @@ function DiscussionPanel({ problemId, discussion, setDiscussion }: { problemId: 
       // Logic Change: Post a COMMENT to the unified discussion instead of creating a NEW discussion
       const res = await discussApi.comment(discussion.id, content.trim());
       
-      setDiscussion({
-        ...discussion,
-        comments: [...messages, res.comment]
-      });
+      setDiscussion((prev: any) => prev ? { ...prev, comments: [...(prev.comments || []), res.comment] } : prev);
+      room.sendComment(res.comment);
 
       setContent("");
       if (textareaRef.current) textareaRef.current.style.height = "38px";
@@ -1291,15 +1336,16 @@ function DiscussionPanel({ problemId, discussion, setDiscussion }: { problemId: 
     try {
       // Logic Change: Use voteComment for chat messages (which are now comments)
       const res = await discussApi.voteComment(id, type);
-      setDiscussion({
-        ...discussion,
-        comments: messages.map((m: any) => m.id === id ? {
+      setDiscussion((prev: any) => prev ? {
+        ...prev,
+        comments: (prev.comments || []).map((m: any) => m.id === id ? {
           ...m,
           upvotes: res.votes.upvotes,
           downvotes: res.votes.downvotes,
           userVote: m.userVote === type ? null : type
         } : m)
-      });
+      } : prev);
+      room.sendVote(id, res.votes);
     } catch (err: any) {
       toast.error(err.message || "Failed to vote");
     }
@@ -1309,10 +1355,8 @@ function DiscussionPanel({ problemId, discussion, setDiscussion }: { problemId: 
     if (!confirm("Vanish this signal?")) return;
     try {
       await discussApi.removeComment(id);
-      setDiscussion({
-        ...discussion,
-        comments: messages.filter((m: any) => m.id !== id)
-      });
+      setDiscussion((prev: any) => prev ? { ...prev, comments: (prev.comments || []).filter((m: any) => m.id !== id) } : prev);
+      room.sendDeleteComment(id);
       toast.success("Signal purged");
     } catch (err: any) {
       toast.error("Purge failed");
@@ -1321,7 +1365,17 @@ function DiscussionPanel({ problemId, discussion, setDiscussion }: { problemId: 
 
   return (
     <div className="flex flex-col h-[400px] border rounded-xl overflow-hidden bg-muted/5 mb-8 shadow-inner">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+      <div className="flex items-center justify-between gap-2 border-b bg-card/80 px-3 py-2 backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+          <span className={cn("h-2 w-2 rounded-full transition-colors", room.connected ? "bg-easy animate-pulse" : "bg-muted-foreground/40")} />
+          {room.connected ? "Live" : "Connecting..."}
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+          <Users className="h-3.5 w-3.5" />
+          <span>{online > 0 ? online : 1} online</span>
+        </div>
+      </div>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
         {messages.length === 0 && <p className="text-center text-muted-foreground text-xs py-10 italic">No messages yet. Say hi!</p>}
         {messages.map((m: any) => (
           <div key={m.id} className={cn(
@@ -1369,12 +1423,24 @@ function DiscussionPanel({ problemId, discussion, setDiscussion }: { problemId: 
           </div>
         ))}
       </div>
+      <div className="h-4 px-4 shrink-0">
+        {typingName && (
+          <p className="text-[10px] italic text-muted-foreground animate-in fade-in">{typingName} is typing...</p>
+        )}
+      </div>
       <div className="p-3 border-t bg-card/90 backdrop-blur-sm flex items-end gap-2 shrink-0">
         <Textarea
           ref={textareaRef}
           placeholder="Type your message..."
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(e) => {
+            setContent(e.target.value);
+            const now = Date.now();
+            if (user && now - lastTypingSent.current > 1500) {
+              lastTypingSent.current = now;
+              room.sendTyping({ id: user.id, name: user.name || "Someone" });
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
