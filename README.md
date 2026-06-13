@@ -1,19 +1,25 @@
 # 🚀 LeetLab: Premium Competitive Coding Platform
 
-
-"""
-
-tumhe meine reflab ka ek folder provide kiya hai jaha frontend ka component implemented hia backend ke sath api call krkre data render kr rha ,like for admin create problem , problem page , contest create contest manage , and etc aur jo component nahi banaye hai tumne frontend me wo sare bana ke backend ke sath integrate kro sara chij aur jo jo admin ko ek code leetcode jaise website ko manage krne ke liye cahiye wo sara chij implement kro sara chij dynamic ho koi bhi static na ho sab kuch backend ke sath wired ho data fetch krke render krne ke liye and make sure theme aur sytle sara frontend ke hisab se ho 
-
-"""
-
 ![LeetLab](https://img.shields.io/badge/LeetLab-v1.0-blueviolet)
 ![React](https://img.shields.io/badge/React-19-blue)
 ![Express](https://img.shields.io/badge/Express-5.1-green)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Latest-336791)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791)
+![Docker](https://img.shields.io/badge/Docker-Sandbox-2496ED)
+![WebSocket](https://img.shields.io/badge/WebSocket-Realtime-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-**LeetLab** is a modern, high-performance competitive coding platform that enables developers to create, solve, and discuss complex algorithmic problems. Featuring a premium glassmorphism UI, real-time code execution, activity tracking, and community engagement tools.
+**LeetLab** is a modern, high-performance competitive coding platform that enables developers to create, solve, and discuss complex algorithmic problems. It pairs a premium glassmorphism UI with a self-hosted warm-container code executor, real-time discussions over WebSockets, contests, activity tracking, and community engagement tools — every screen is wired to the backend with no static data.
+
+### 🧩 Services at a glance
+
+| Service | Folder | Default Port | Responsibility |
+|---------|--------|--------------|----------------|
+| **Frontend** | `frontend/` | `5173` | React + Vite single-page app |
+| **Backend API** | `backend/` | `3000` | Express REST API, auth, executor orchestration |
+| **Realtime (WebSocket)** | `ws/` | `4001` | Live discussion messaging relay |
+| **PostgreSQL** | (Docker) | `5432` | Primary data store |
+| **Redis** | (Docker) | `6379` | Optional execution queue (BullMQ) |
+| **Docker Engine** | host socket | — | Warm-container code sandbox |
 
 **Live Demo**: [Coming Soon] | **Documentation**: [Wiki](docs/) | **Report Bug**: [Issues](../../issues)
 
@@ -39,7 +45,7 @@ tumhe meine reflab ka ek folder provide kiya hai jaha frontend ka component impl
 ### 🧠 Advanced Problem Solving
 - **Split-Pane Editor**: Monaco editor with full-screen coding environment
 - **Real-time Test Validation**: Instant feedback on test case execution
-- **Multiple Language Support**: Python, JavaScript, Java, C++, C, Go, Ruby, PHP
+- **Multiple Language Support**: Python, JavaScript (Node), Java, C++, and C — each backed by its own warm-container pool
 - **Reference Solutions**: Community and editorial solutions with syntax highlighting
 
 ### ⚡ Code Execution
@@ -60,11 +66,22 @@ tumhe meine reflab ka ek folder provide kiya hai jaha frontend ka component impl
 - **Participant Tracking**: Registration and performance analytics
 - **Rating System**: Elo-based rating with contest multipliers
 
+### 💬 Real-time Discussions
+- **Live Messaging**: WebSocket-powered chat on every problem page and discussion thread
+- **Instant Sync**: New comments, deletes, and votes broadcast to everyone viewing the same thread — no refresh
+- **Presence & Typing**: Live viewer count and "is typing…" indicators
+- **REST-backed Persistence**: The WS layer only mirrors activity; data is still saved via the API, so history survives reloads
+
 ### 📚 Community Features
 - **Problem Discussions**: Per-problem forums for hints and editorials
-- **Comment Threading**: Hierarchical discussions with upvote system
+- **Comment Threading**: Discussions with upvote/downvote system
 - **AI Code Review**: Automated code analysis and optimization suggestions
 - **Dynamic Playlists**: Curated problem sets for interview prep and learning
+
+### 🔐 Authentication
+- **Email / Password**: Stateless JWT auth in HttpOnly cookies (bcrypt-hashed passwords)
+- **Social Login (OAuth)**: Google & GitHub via Clerk — optional, drops in without changing the existing login/register UI
+- **Role-based Access**: `ADMIN` vs `USER` with protected routes on both client and server
 
 ### 👤 User Profiles
 - **Rich Profiles**: Bio, social links (GitHub, LinkedIn), skills, location
@@ -79,18 +96,22 @@ tumhe meine reflab ka ek folder provide kiya hai jaha frontend ka component impl
 ### Frontend
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **Framework** | React 18 + TypeScript | Component-based UI with type safety |
-| **Routing** | React Router v7 | Client-side page navigation |
+| **Framework** | React 19 + TypeScript | Component-based UI with type safety |
+| **Routing** | React Router DOM v6 | Client-side page navigation |
 | **Styling** | Tailwind CSS 4 | Utility-first responsive design |
 | **Components** | Shadcn/UI + Radix UI | Accessible, composable UI primitives |
 | **Editor** | Monaco Editor | Professional code editing experience |
+| **Resizable Panels** | react-resizable-panels | Draggable split-pane workspace |
+| **Server State** | TanStack React Query | Data fetching, caching, invalidation |
+| **Local State** | React Context | Auth & theme providers |
+| **Realtime** | Native WebSocket (`useRealtimeRoom`) | Live discussion sync |
+| **Auth (OAuth)** | @clerk/clerk-react | Optional Google / GitHub social login |
 | **Charts** | Recharts | Data visualization (heatmap, analytics) |
-| **Forms** | React Hook Form | Efficient form state management |
-| **State** | Zustand + Context API | Global & local state management |
-| **Icons** | Lucide React | 500+ SVG icons library |
-| **Animations** | Framer Motion | Smooth transitions and micro-interactions |
+| **Forms** | React Hook Form + Zod | Form state & schema validation |
+| **Markdown** | react-markdown + remark-gfm | Rendering problem/discussion content |
+| **Icons** | Lucide React | SVG icon library |
 | **Notifications** | Sonner | Toast notifications |
-| **Build** | Vite | Lightning-fast dev server & HMR |
+| **Build** | Vite 7 | Lightning-fast dev server & HMR |
 
 ### Backend
 | Layer | Technology | Purpose |
@@ -101,17 +122,29 @@ tumhe meine reflab ka ek folder provide kiya hai jaha frontend ka component impl
 | **ORM** | Prisma 7.8 | Type-safe database queries |
 | **Database** | PostgreSQL 15+ | Relational database |
 | **Auth** | JWT + HttpOnly Cookies | Secure stateless authentication |
+| **OAuth** | @clerk/backend | Verifies Google / GitHub social login |
 | **Password Security** | bcryptjs | Password hashing with salt rounds |
 | **Code Execution** | Docker + dockerode | Warm-container sandbox (compile once, run many) |
-| **Queue** | BullMQ + Redis | Bounded-concurrency execution throttling |
+| **Queue** | BullMQ + ioredis | Bounded-concurrency execution throttling |
 | **Middleware** | CORS, Cookie-Parser | Request handling |
 | **Environment** | dotenv | Configuration management |
+
+### Realtime Service (`ws/`)
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Runtime** | Node.js (ES Modules) | Standalone process |
+| **Transport** | `ws` (WebSocket) | Room-based pub/sub relay |
+| **State** | In-memory rooms | Stateless — no persistence (REST owns data) |
+| **Events** | comment / delete / vote / typing / presence | Live discussion sync |
 
 ### Infrastructure & DevOps
 | Component | Tech | Purpose |
 |-----------|------|---------|
 | **Database** | PostgreSQL | Data persistence |
+| **Cache / Queue** | Redis | BullMQ execution queue (optional) |
 | **Code Execution** | Docker warm-container pool | Sandboxed compilation & execution |
+| **Realtime** | WebSocket server | Live discussion messaging |
+| **Orchestration** | Docker Compose | One-command multi-service stack |
 | **API Version** | REST (v1) | Versioned API for backwards compatibility |
 | **Session** | HttpOnly Cookies | Secure credential storage |
 | **Development** | Nodemon | Auto-reload on file changes |
@@ -127,7 +160,7 @@ graph TB
     subgraph Frontend ["🎨 FRONTEND (React + Vite)"]
         Components["📦 Components<br/>(Problems, Editor)"]
         Routing["🔀 React Router"]
-        State["🎯 State Management<br/>(Zustand + Context)"]
+        State["🎯 State Management<br/>(React Query + Context)"]
         UI["🖼️ UI System<br/>(Shadcn/UI)"]
         Editor["✏️ Monaco Editor"]
     end
@@ -165,8 +198,13 @@ graph TB
         end
     end
 
-    subgraph External ["🔌 EXTERNAL SERVICES"]
+    subgraph Realtime ["🔌 REALTIME (ws/)"]
+        WSServer["📡 WebSocket Relay<br/>(rooms, presence, typing)"]
+    end
+
+    subgraph External ["🗄️ EXTERNAL SERVICES"]
         Postgres[("🗄️ PostgreSQL<br/>Database")]
+        Redis[("⚡ Redis<br/>BullMQ Queue (optional)")]
         Docker["🐳 Docker Engine<br/>(Sandboxed Execution)"]
     end
 
@@ -184,6 +222,9 @@ graph TB
     Auth -->|HTTP| CodeR
     Auth -->|HTTP| DiscR
     Auth -->|HTTP| PlaylistR
+
+    Components -->|WebSocket| WSServer
+    WSServer -->|broadcast| Components
     
     AuthR --> AuthMW
     AuthMW --> AuthC
@@ -198,6 +239,8 @@ graph TB
     ProblemC --> DB
     SubC --> DB
     CodeC --> Executor
+    CodeC -.->|enqueue| Redis
+    Redis -.->|worker| Executor
     Executor --> Docker
     
     DB --> Postgres
@@ -207,6 +250,7 @@ graph TB
 
     style Frontend fill:#1e40af,stroke:#0284c7,color:#fff,stroke-width:3px
     style Backend fill:#15803d,stroke:#16a34a,color:#fff,stroke-width:3px
+    style Realtime fill:#b45309,stroke:#f59e0b,color:#fff,stroke-width:3px
     style External fill:#7c2d12,stroke:#ea580c,color:#fff,stroke-width:3px
     style APIClient fill:#6b21a8,stroke:#9333ea,color:#fff,stroke-width:3px
 ```
@@ -263,7 +307,7 @@ graph LR
     E --> F["🔑 JWT Sign<br/>7 day expiry"]
     F --> G["🍪 HttpOnly Cookie<br/>Set-Cookie header"]
     G --> H["✅ Auth Success<br/>User object"]
-    H --> I["🎨 Frontend<br/>Zustand store"]
+    H --> I["🎨 Frontend<br/>Auth context"]
     I --> J["🏠 Dashboard<br/>Authenticated"]
     
     J -->|Make API call| K["🔐 Fetch with credentials"]
@@ -279,6 +323,35 @@ graph LR
     style E fill:#7c2d12,stroke:#ea580c,color:#fff
     style F fill:#6b21a8,stroke:#9333ea,color:#fff
     style J fill:#1e40af,stroke:#0284c7,color:#fff
+```
+
+### 4️⃣ Real-time Discussion Flow (WebSocket)
+
+The WS server (`ws/`) is a stateless relay. Persistence always goes through the REST API; the relay only mirrors live activity to everyone in the same room (a room key = discussion id).
+
+```mermaid
+sequenceDiagram
+    participant A as 👤 User A
+    participant WS as 📡 WS Relay (ws/)
+    participant B as 👤 User B
+    participant API as ⚙️ Backend API
+    participant DB as 🗄️ PostgreSQL
+
+    A->>WS: join(room = discussionId)
+    B->>WS: join(room = discussionId)
+    WS-->>A: presence(count)
+    WS-->>B: presence(count)
+
+    Note over A: Types a comment
+    A->>WS: typing(user)
+    WS-->>B: typing(user) → "A is typing…"
+
+    A->>API: POST /comments/add (persist)
+    API->>DB: Insert comment
+    DB-->>API: Saved comment
+    API-->>A: { comment }
+    A->>WS: comment(comment)
+    WS-->>B: comment(comment) → appended live (no refresh)
 ```
 
 ---
@@ -314,91 +387,117 @@ erDiagram
     CONTEST ||--o{ CONTEST_PROBLEM : "has problems"
     CONTEST ||--o{ CONTEST_PARTICIPANT : "has participants"
 
-    USER : uuid id PK
-    USER : string name
-    USER : string email UK
-    USER : string password
-    USER : enum role
-    USER : string bio
-    USER : string location
-    USER : string github
-    USER : int currentStreak
-    USER : int longestStreak
-    USER : datetime createdAt
+    USER {
+        uuid id PK
+        string name
+        string email UK
+        string password
+        enum role
+        string bio
+        string location
+        string github
+        int currentStreak
+        int longestStreak
+        datetime createdAt
+    }
 
-    PROBLEM : uuid id PK
-    PROBLEM : string title
-    PROBLEM : string description
-    PROBLEM : enum difficulty
-    PROBLEM : string[] tags
-    PROBLEM : json examples
-    PROBLEM : string constraints
-    PROBLEM : json testcases
-    PROBLEM : json codeSnippets
-    PROBLEM : uuid userId FK
+    PROBLEM {
+        uuid id PK
+        string title
+        string description
+        enum difficulty
+        array tags
+        json examples
+        string constraints
+        json testcases
+        json codeSnippets
+        uuid userId FK
+    }
 
-    SUBMISSION : uuid id PK
-    SUBMISSION : uuid userId FK
-    SUBMISSION : uuid problemId FK
-    SUBMISSION : string language
-    SUBMISSION : string status
-    SUBMISSION : string memory
-    SUBMISSION : string time
+    SUBMISSION {
+        uuid id PK
+        uuid userId FK
+        uuid problemId FK
+        string language
+        string status
+        string memory
+        string time
+    }
 
-    TEST_CASE_RESULT : uuid id PK
-    TEST_CASE_RESULT : uuid submissionId FK
-    TEST_CASE_RESULT : int testCase
-    TEST_CASE_RESULT : boolean passed
-    TEST_CASE_RESULT : string status
+    TEST_CASE_RESULT {
+        uuid id PK
+        uuid submissionId FK
+        int testCase
+        boolean passed
+        string status
+    }
 
-    PROBLEM_SOLVED : uuid id PK
-    PROBLEM_SOLVED : uuid userId FK
-    PROBLEM_SOLVED : uuid problemId FK
-    PROBLEM_SOLVED : datetime createdAt
+    PROBLEM_SOLVED {
+        uuid id PK
+        uuid userId FK
+        uuid problemId FK
+        datetime createdAt
+    }
 
-    PLAYLIST : uuid id PK
-    PLAYLIST : string name
-    PLAYLIST : string description
-    PLAYLIST : uuid userId FK
+    PLAYLIST {
+        uuid id PK
+        string name
+        string description
+        uuid userId FK
+    }
 
-    PROBLEM_IN_PLAYLIST : uuid id PK
-    PROBLEM_IN_PLAYLIST : uuid playlistId FK
-    PROBLEM_IN_PLAYLIST : uuid problemId FK
+    PROBLEM_IN_PLAYLIST {
+        uuid id PK
+        uuid playlistId FK
+        uuid problemId FK
+    }
 
-    DISCUSSION : uuid id PK
-    DISCUSSION : string title
-    DISCUSSION : string content
-    DISCUSSION : int upvotes
-    DISCUSSION : uuid userId FK
-    DISCUSSION : uuid problemId FK
+    DISCUSSION {
+        uuid id PK
+        string title
+        string content
+        int upvotes
+        uuid userId FK
+        uuid problemId FK
+    }
 
-    COMMENT : uuid id PK
-    COMMENT : string content
-    COMMENT : uuid userId FK
-    COMMENT : uuid discussionId FK
+    COMMENT {
+        uuid id PK
+        string content
+        uuid userId FK
+        uuid discussionId FK
+    }
 
-    CONTEST : uuid id PK
-    CONTEST : string slug UK
-    CONTEST : string name
-    CONTEST : string status
-    CONTEST : datetime startTime
-    CONTEST : datetime endTime
-    CONTEST : uuid createdById FK
+    CONTEST {
+        uuid id PK
+        string slug UK
+        string name
+        string status
+        datetime startTime
+        datetime endTime
+        uuid createdById FK
+    }
 
-    CONTEST_PROBLEM : uuid id PK
-    CONTEST_PROBLEM : uuid contestId FK
-    CONTEST_PROBLEM : uuid problemId FK
-    CONTEST_PROBLEM : string label
+    CONTEST_PROBLEM {
+        uuid id PK
+        uuid contestId FK
+        uuid problemId FK
+        string label
+    }
 
-    CONTEST_PARTICIPANT : uuid id PK
-    CONTEST_PARTICIPANT : uuid contestId FK
-    CONTEST_PARTICIPANT : uuid userId FK
+    CONTEST_PARTICIPANT {
+        uuid id PK
+        uuid contestId FK
+        uuid userId FK
+    }
 
-    USER_ACTIVITY : uuid id PK
-    USER_ACTIVITY : uuid userId FK
-    USER_ACTIVITY : string dateKey UK
-    USER_ACTIVITY : int count
-    USER_ACTIVITY : datetime createdAt
+    USER_ACTIVITY {
+        uuid id PK
+        uuid userId FK
+        string dateKey UK
+        int count
+        datetime createdAt
+    }
 ```
 
 ### 🔗 Detailed Model Relationships Map
@@ -581,7 +680,7 @@ model Submission {
   userId          String
   problemId       String
   sourceCode      Json                // Code in target language
-  language        String              // python, javascript, java, cpp, c, go, rb, php
+  language        String              // python, javascript, java, cpp, c
   stdin           String?             // Standard input
   stdout          String?             // Program output
   stderr          String?             // Error output
@@ -835,6 +934,14 @@ model UserActivity {
 LeetLab/
 │
 ├── README.md (this file)
+├── docker-compose.yml                 # Frontend + backend + ws + postgres + redis
+│
+├── ws/                                # Real-time messaging WebSocket server
+│   ├── server.js                      # Room-based relay (comment/vote/typing/presence)
+│   ├── package.json
+│   ├── Dockerfile
+│   ├── README.md
+│   └── .env.example                   # WS_PORT (default 4001)
 │
 ├── backend/                           # Node.js Express API
 │   ├── package.json
@@ -885,11 +992,12 @@ LeetLab/
 │       └── middleware/
 │           └── auth.middleware.js     # Protected route middleware
 │
-├── leetlab-frontend/                  # React + TypeScript frontend
+├── frontend/                          # React + TypeScript frontend (Vite)
 │   ├── package.json
 │   ├── vite.config.ts                 # Vite bundler config
 │   ├── tsconfig.json
 │   ├── index.html
+│   ├── .env.example                   # VITE_API_URL, VITE_WS_URL, VITE_CLERK_PUBLISHABLE_KEY
 │   │
 │   └── src/
 │       ├── main.tsx                   # React entry point
@@ -942,21 +1050,15 @@ LeetLab/
 │       ├── hooks/                     # Custom React hooks
 │       │   └── use-mobile.tsx         # Responsive design hook
 │       │
-│       ├── lib/                       # Utilities & helpers
-│       │   ├── api.ts                 # API client (fetch + caching)
-│       │   ├── auth-context.tsx       # Auth context provider
-│       │   ├── auth-store.ts          # Zustand auth store
-│       │   ├── cache.ts               # Response caching logic
-│       │   ├── submission-queue.ts    # Offline submission queue
-│       │   ├── use-query.ts           # Data fetching hook
-│       │   ├── utils.ts               # Helper functions
-│       │   ├── communityData.ts       # Seed data
-│       │   └── theme-context.tsx      # Dark/light mode
-│       │
-│       └── stores/                    # Zustand state stores
-│           ├── auth.store.ts
-│           ├── problem.store.ts
-│           └── ... (others)
+│       └── lib/                       # Utilities & helpers
+│           ├── api.ts                 # Typed REST API client (fetch)
+│           ├── auth-context.tsx       # Auth context provider
+│           ├── theme-context.tsx      # Dark/light mode
+│           ├── clerk.ts               # Clerk config (social login)
+│           ├── use-realtime-room.ts   # WebSocket hook for live discussions
+│           └── utils.ts               # Helper functions
+│
+│       # Server state is handled by TanStack React Query (no Zustand store).
 ```
 
 ---
@@ -1061,6 +1163,27 @@ LeetLab/
 | POST | `/follow` | Follow user | Yes |
 | DELETE | `/follow/:userId` | Unfollow user | Yes |
 
+### Realtime WebSocket (`ws://<host>:4001`)
+
+Not a REST API — a JSON message relay. Rooms are keyed by discussion id. A socket
+is in at most one room at a time. The relay never persists; it only fans out events.
+
+| Direction | Message | Description |
+|-----------|---------|-------------|
+| client → server | `{ type: "join", room }` | Join a discussion room |
+| client → server | `{ type: "leave" }` | Leave current room |
+| client → server | `{ type: "comment", room, comment }` | Broadcast a newly created comment |
+| client → server | `{ type: "delete_comment", room, commentId }` | Broadcast a deletion |
+| client → server | `{ type: "vote", room, commentId, votes }` | Broadcast updated vote counts |
+| client → server | `{ type: "typing", room, user }` | Typing indicator |
+| server → client | `{ type: "comment" \| "delete_comment" \| "vote" \| "typing" }` | Relayed event |
+| server → client | `{ type: "presence", count }` | Live viewer count for the room |
+| server → client | `{ type: "joined", room, count }` | Join acknowledgement |
+
+The frontend consumes this via the `useRealtimeRoom(room, handlers)` hook
+(`frontend/src/lib/use-realtime-room.ts`), used by the problem-page discussion
+panel and the `discuss/:postId` thread page. It auto-reconnects on drop.
+
 ---
 
 ## 🎨 Frontend Components
@@ -1149,10 +1272,14 @@ DATABASE_URL="postgresql://user:password@localhost:5432/leetlab"
 JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
 PORT=3000
 NODE_ENV="development"
+ALLOWED_ORIGINS="http://localhost:5173"
 # Code execution (warm-container pool). Requires Docker running.
 EXECUTOR_LANGUAGES="python,gcc"
 # Optional execution queue (needs Redis). Leave false to run inline.
 QUEUE_ENABLED="false"
+REDIS_URL="redis://localhost:6379"
+# Optional: social login (Google/GitHub) via Clerk. Leave unset to disable.
+CLERK_SECRET_KEY=""
 EOF
 
 # Create database and run migrations
@@ -1166,17 +1293,41 @@ npm run dev
 # Server runs on http://localhost:3000
 ```
 
-### Step 3: Frontend Setup
+> 💡 The warm-container executor needs the Docker daemon running. On first run it
+> pulls/builds the language images, so the very first execution can be slow.
+
+### Step 3: Realtime WebSocket Server
 
 ```bash
-cd ../leetlab-frontend
+cd ../ws
+
+# Install dependencies
+npm install
+
+# (optional) override the port
+cat > .env << EOF
+WS_PORT=4001
+EOF
+
+# Start the relay
+npm run start        # or: npm run dev  (auto-restart)
+# WS server runs on ws://localhost:4001
+```
+
+### Step 4: Frontend Setup
+
+```bash
+cd ../frontend
 
 # Install dependencies
 npm install
 
 # Create environment file
-cat > .env.local << EOF
+cat > .env << EOF
 VITE_API_URL="http://localhost:3000/api/v1"
+VITE_WS_URL="ws://localhost:4001"
+# Optional: enables Google/GitHub buttons on login/register
+VITE_CLERK_PUBLISHABLE_KEY=""
 EOF
 
 # Start development server
@@ -1184,22 +1335,27 @@ npm run dev
 # Frontend runs on http://localhost:5173
 ```
 
-### Step 4: Verify Installation
+### Step 5: Verify Installation
 
 1. Open browser to `http://localhost:5173`
 2. Navigate to `/register` and create account
 3. Create a test problem from `/admin/problems/new`
 4. Open the problem and test code submission
-5. Check `/leaderboard` for user ranking
+5. Open the same problem in two windows → post a comment and watch it appear live
+6. Check `/leaderboard` for user ranking
 
-### Docker Setup (Optional)
+### Docker Setup (Recommended)
+
+The included `docker-compose.yml` builds and wires every service (frontend,
+backend, **ws**, PostgreSQL, Redis) — and mounts the host Docker socket so the
+backend can run the warm-container executor.
 
 ```bash
-# Build and run with Docker Compose
-docker-compose up -d
+# Build and run the whole stack
+docker compose up -d --build
 
 # Wait for services to start (30-60 seconds)
-# Then access frontend on http://localhost:5173
+# Frontend: http://localhost:5173   API: http://localhost:3000   WS: ws://localhost:4001
 ```
 
 ---
@@ -1229,10 +1385,10 @@ LeetLab employs a sophisticated design language combining transparency, depth, a
      - Blue (`#3b82f6`) - Info/Processing
 
 3. **Typography**
-   - **Headings**: Geist Sans (system font fallback)
-   - **Body**: Inter / system-ui stack
-   - **Monospace**: Fira Code / JetBrains Mono for code
-   - **Scale**: 12px → 48px (8-step scale)
+   - **Display / Headings**: Space Grotesk
+   - **Body**: Inter (weight 450, tuned letter-spacing + font smoothing)
+   - **Monospace**: JetBrains Mono for code & metrics
+   - **Scale**: 12px → 48px responsive scale
 
 4. **Spacing System**
    - Tailwind's 4px base unit
@@ -1280,9 +1436,10 @@ LeetLab employs a sophisticated design language combining transparency, depth, a
 
 5. **User Experience**
    - Real-time feedback on code execution
-   - Smooth transitions between problem states
+   - Live discussions over WebSockets (instant comments, presence, typing)
+   - Skeleton loading states across every data-driven page
+   - Draggable, persisted split-pane workspace on the problem editor
    - Responsive design (mobile-first)
-   - Offline support via localStorage queue
    - Dark/Light mode toggle
 
 ---
@@ -1329,45 +1486,3 @@ We welcome contributions! Please follow these guidelines:
 
 This project is licensed under the MIT License - see [LICENSE.md](LICENSE.md) for details.
 
----
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](../../issues)
-- **Discussions**: [GitHub Discussions](../../discussions)
-- **Email**: support@leetlab.dev
-- **Discord**: [Join Community](https://discord.gg/leetlab)
-
----
-
-## 🙏 Acknowledgments
-
-- [Docker](https://www.docker.com) - Sandboxed code execution
-- [dockerode](https://github.com/apocas/dockerode) - Docker Engine API client
-- [BullMQ](https://bullmq.io) - Execution queue
-- [Shadcn/UI](https://shadcn-ui.com) - Component library
-- [Tailwind CSS](https://tailwindcss.com) - Styling framework
-- [Prisma](https://www.prisma.io) - Database ORM
-- Community contributors and users
-
----
-
-**Made with ❤️ by the LeetLab Team**
-
-Last Updated: April 29, 2026 | Version: 1.0.0
-   npx prisma generate
-   npm run dev
-   ```
-
-3. **Frontend Setup**:
-   ```bash
-   cd leetlab-frontend
-   npm install
-   # Create .env with VITE_API_URL
-   npm run dev
-   ```
-
----
-
-## 📄 License
-LeetLab is open-source software licensed under the [MIT License](LICENSE).
