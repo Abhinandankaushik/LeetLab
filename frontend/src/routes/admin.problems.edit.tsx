@@ -1,14 +1,15 @@
 import * as React from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowLeft, Loader2, Shield } from "lucide-react";
+import { ArrowLeft, Shield } from "lucide-react";
 import CreateProblemForm from "@/components/CreateProblemForm";
+import { FormSkeleton } from "@/components/empty-state";
 
 export default function EditProblemPage() {
   const { user, loading } = useAuth();
   const { problemId } = useParams();
 
-  if (loading) return <div className="grid min-h-[40vh] place-items-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+  if (loading) return <FormSkeleton />;
   
   if (!user || user.role !== "ADMIN") {
     return (

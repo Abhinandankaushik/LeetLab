@@ -3,7 +3,7 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { playlistsApi, type Playlist } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
-  Loader2, ArrowLeft, BookOpen, Clock, BarChart2,
+  ArrowLeft, BookOpen, Clock, BarChart2,
   Play, MoreVertical, Trash2, CheckCircle2, Lock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState, DetailSkeleton } from "@/components/empty-state";
 
 export default function PlaylistDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -56,14 +56,7 @@ export default function PlaylistDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex h-[80vh] items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40 mx-auto" />
-          <p className="mt-4 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">Initializing track data...</p>
-        </div>
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (error || !playlist) {

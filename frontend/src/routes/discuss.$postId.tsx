@@ -9,7 +9,7 @@ import {
   TrendingUp, Award, ShieldCheck, Flame, ChevronDown, 
   MoreVertical, Sparkles, Trash2
 } from "lucide-react";
-import { EmptyState, ErrorState } from "@/components/empty-state";
+import { EmptyState, ErrorState, DetailSkeleton } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -131,14 +131,7 @@ export default function PostDetail() {
     return list.sort((a, b) => ((b.upvotes ?? 0) - (b.downvotes ?? 0)) - ((a.upvotes ?? 0) - (a.downvotes ?? 0)));
   }, [commentsData?.comments, sortBy]);
 
-  if (isLoading) return (
-    <div className="flex h-[80vh] items-center justify-center bg-background">
-      <div className="text-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary opacity-50 mx-auto" />
-        <p className="mt-4 text-[10px] font-mono uppercase tracking-[0.3em] text-primary/60">Synchronizing Brain Trust...</p>
-      </div>
-    </div>
-  );
+  if (isLoading) return <DetailSkeleton />;
 
   if (isError) return <div className="min-h-screen bg-background p-10"><ErrorState onRetry={() => refetch()} /></div>;
 

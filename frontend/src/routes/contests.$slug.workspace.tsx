@@ -25,6 +25,7 @@ import {
   ResizablePanel, 
   ResizablePanelGroup 
 } from "@/components/ui/resizable";
+import { EditorSkeleton } from "@/components/empty-state";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export default function ContestWorkspace() {
@@ -171,7 +172,7 @@ export default function ContestWorkspace() {
     }
   };
 
-  if (contestLoading) return <div className="h-screen w-screen flex items-center justify-center bg-background"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+  if (contestLoading) return <EditorSkeleton fullScreen />;
   if (!contest) return <div className="p-20 text-center">Contest not found.</div>;
 
   // Enforce Registration and Timing (except for admins)

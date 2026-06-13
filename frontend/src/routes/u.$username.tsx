@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { usersApi, ratingsApi } from "@/lib/api";
 import { 
-  Loader2, Trophy, Code2, Globe, MapPin, Eye, CheckCircle2, 
+  Trophy, Code2, Globe, MapPin, Eye, CheckCircle2, 
   MessageSquare, Star, TrendingUp, Users, ArrowLeft, Share2, Mail, Link as LinkIcon
 } from "lucide-react";
 import { ActivityHeatmap } from "@/components/activity-heatmap";
@@ -11,6 +11,7 @@ import { SolvedProblemsDonut, DifficultyRow } from "@/components/solved-problems
 import { AreaChart, Area, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ProfileSkeleton } from "@/components/empty-state";
 
 export default function PublicProfilePage() {
   const { username } = useParams();
@@ -38,7 +39,7 @@ export default function PublicProfilePage() {
     return [{ rating: 0 }, ...history];
   }, [ratingHistoryData]);
 
-  if (isLoading) return <div className="grid min-h-[60vh] place-items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (isLoading) return <ProfileSkeleton />;
   if (isError || !profile) return (
     <div className="mx-auto max-w-md px-4 py-32 text-center">
       <Trophy className="mx-auto h-12 w-12 text-muted-foreground opacity-20 mb-4" />

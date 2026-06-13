@@ -39,6 +39,7 @@ const formatStat = (val: string | null) => {
   return raw;
 };
 import { AddToPlaylistDialog } from "@/components/PlaylistDialogs";
+import { EditorSkeleton } from "@/components/empty-state";
 import * as Resizable from "react-resizable-panels";
 
 
@@ -318,14 +319,7 @@ export default function ProblemDetail() {
   }, [theme]);
 
   if (loading) {
-    return (
-      <div className="flex h-[calc(100vh-3.5rem)] items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary opacity-80" />
-          <p className="text-xs font-mono text-muted-foreground animate-pulse tracking-widest uppercase">Initializing Workspace...</p>
-        </div>
-      </div>
-    );
+    return <EditorSkeleton />;
   }
 
   if (error || !problem || !lang) {

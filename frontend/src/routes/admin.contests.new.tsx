@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { FormSkeleton } from "@/components/empty-state";
 
 export default function NewContestPage() {
   const { user, loading: authLoading } = useAuth();
@@ -32,7 +33,7 @@ export default function NewContestPage() {
     p.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (authLoading) return <div className="grid min-h-[40vh] place-items-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+  if (authLoading) return <FormSkeleton />;
   
   if (!user || user.role !== "ADMIN") {
     return (

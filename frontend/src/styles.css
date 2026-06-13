@@ -875,6 +875,31 @@
   color: var(--foreground);
 }
 
+/* Hand (pointer) cursor on every clickable element across the app. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="menuitem"],
+[role="option"],
+[role="tab"],
+[role="switch"],
+[role="checkbox"],
+[role="radio"],
+a[href],
+label[for],
+summary,
+select,
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Disabled controls clearly signal they aren't interactive. */
+button:disabled,
+[aria-disabled="true"],
+[data-disabled],
+.cursor-not-allowed {
+  cursor: not-allowed;
+}
+
 /* Toast: slide in from the side (overrides sonner's subtle default) */
 @keyframes toast-slide-in {
   0% {

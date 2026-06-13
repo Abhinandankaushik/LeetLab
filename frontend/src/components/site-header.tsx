@@ -52,7 +52,7 @@ export function SiteHeader() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4">
         <Link to="/" className="group flex items-center gap-2 font-display text-lg font-bold transition-transform hover:scale-[1.02]">
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-gradient-primary text-primary-foreground glow-primary transition-transform duration-500 group-hover:rotate-[360deg]">
+          <span className="grid h-8 w-8 place-items-center rounded-md bg-gradient-primary text-primary-foreground glow-primary transition-transform duration-300 group-hover:scale-105">
             <Code2 className="h-4 w-4" />
           </span>
           <span>

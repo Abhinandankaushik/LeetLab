@@ -2,11 +2,12 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import { adminApi, problemsApi, contestsApi, ratingsApi, type User, type Problem, type Contest } from "@/lib/api";
-import { Loader2, Users, Code2, Trophy, Activity, Shield, Sparkles, Plus, Trash2, Crown, RefreshCw, Edit2, Check, X, TrendingUp, BarChart3, PieChart as PieIcon } from "lucide-react";
+import { Users, Code2, Trophy, Activity, Shield, Sparkles, Plus, Trash2, Crown, RefreshCw, Edit2, Check, X, TrendingUp, BarChart3, PieChart as PieIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { cn } from "@/lib/utils";
+import { DashboardSkeleton } from "@/components/empty-state";
 
 export default function AdminDashboard() {
   const { user, loading } = useAuth();
@@ -37,7 +38,7 @@ export default function AdminDashboard() {
     adminApi.analytics().then(setAnalytics).catch(() => { });
   }, [user]);
 
-  if (loading) return <div className="grid min-h-[40vh] place-items-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+  if (loading) return <DashboardSkeleton />;
   if (!user || user.role !== "ADMIN") {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">

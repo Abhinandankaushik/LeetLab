@@ -12,7 +12,7 @@ export function SiteFooter() {
           {/* Brand and Mission */}
           <div className="md:col-span-2">
             <Link to="/" className="group flex items-center gap-2 font-display text-xl font-bold transition-transform hover:scale-[1.02]">
-              <span className="grid h-8 w-8 place-items-center rounded-md bg-gradient-primary text-primary-foreground glow-primary transition-transform duration-500 group-hover:rotate-[360deg]">
+              <span className="grid h-8 w-8 place-items-center rounded-md bg-gradient-primary text-primary-foreground glow-primary transition-transform duration-300 group-hover:scale-105">
                 <Code2 className="h-4 w-4" />
               </span>
               <span>

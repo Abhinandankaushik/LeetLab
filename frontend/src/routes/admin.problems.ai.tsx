@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { FormSkeleton } from "@/components/empty-state";
 
 export default function AdminAIProblemPage() {
   const { user, loading: authLoading } = useAuth();
@@ -13,7 +14,7 @@ export default function AdminAIProblemPage() {
   const [problemName, setProblemName] = React.useState("");
   const [isGenerating, setIsGenerating] = React.useState(false);
 
-  if (authLoading) return <div className="grid min-h-[40vh] place-items-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+  if (authLoading) return <FormSkeleton />;
   
   if (!user || user.role !== "ADMIN") {
     return (

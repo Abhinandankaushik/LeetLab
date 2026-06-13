@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { submissionsApi, type Submission } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { 
-  CheckCircle2, XCircle, Loader2, Clock, Zap, ChevronRight, 
+  CheckCircle2, XCircle, Clock, Zap, ChevronRight, 
   Terminal, Code2, ShieldAlert, ShieldCheck, ArrowLeft 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
+import { ListSkeleton } from "@/components/empty-state";
 
 const formatStat = (val: string | null, type: 'time' | 'memory' = 'time') => {
   if (!val || val === "[]" || val === "null") return type === 'time' ? "0 ms" : "0 KB";
@@ -87,12 +88,7 @@ export default function SubmissionsPage() {
       <p className="mt-2 text-muted-foreground text-sm max-w-lg">Track your progress and review previous solutions to improve your coding logic.</p>
 
       <div className="mt-12 space-y-3">
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-primary opacity-40" />
-            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Retrieving history...</p>
-          </div>
-        )}
+        {loading && <ListSkeleton rows={8} />}
         
         {error && (
           <div className="p-8 rounded-2xl border border-hard/20 bg-hard/5 text-center">

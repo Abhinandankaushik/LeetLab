@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Plus, X, Upload, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { FormSkeleton } from "@/components/empty-state";
 
 
 export default function EditProfilePage() {
@@ -39,7 +40,7 @@ export default function EditProfilePage() {
     setImagePreview(user.image || null);
   }, [user]);
 
-  if (loading) return <div className="grid min-h-[40vh] place-items-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+  if (loading) return <FormSkeleton />;
   if (!user) {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">

@@ -14,6 +14,7 @@ import { ActivityHeatmap } from "@/components/activity-heatmap";
 import { SolvedProblemsDonut, DifficultyRow } from "@/components/solved-problems-donut";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { cn } from "@/lib/utils";
+import { ProfileSkeleton } from "@/components/empty-state";
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
@@ -55,7 +56,7 @@ export default function ProfilePage() {
     }
   }, [profileData?.recentSubmissions, profileData?.stats?.totalSubmissions]);
 
-  if (loading || !profileData) return <div className="grid min-h-[40vh] place-items-center"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+  if (loading || !profileData) return <ProfileSkeleton />;
 
   const { stats, languages, skills, recentSubmissions, badges, activityHeatmap } = profileData;
   const heatmapData = Object.entries(activityHeatmap).map(([date, count]) => ({ date, count }));
