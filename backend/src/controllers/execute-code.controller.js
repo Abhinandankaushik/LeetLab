@@ -94,7 +94,7 @@ export const excutecode = async (req, res) => {
         };
 
         // Heavy work runs through a bounded-concurrency queue so simultaneous
-        // submissions can't overwhelm Judge0 / the server. Falls back to inline
+        // submissions can't overwhelm the executor / the server. Falls back to inline
         // execution when the queue is disabled (e.g. local dev without Redis).
         const result = isQueueEnabled
             ? await enqueueExecution(payload)

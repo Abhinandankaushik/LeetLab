@@ -1,5 +1,6 @@
 import { db } from "../libs/db.js"
-import { getJudge0LanguageId, submitBatch, pollBatchResults, runSubmissions } from "../libs/judge0.lib.js"
+import { getLanguageId } from "../executor/languages.js"
+import { runSubmissions } from "../executor/index.js"
 
 const validateProblem = async (referenceSolutions, testcases) => {
     const langsToValidate = Object.keys(referenceSolutions || {});
@@ -10,7 +11,7 @@ const validateProblem = async (referenceSolutions, testcases) => {
 
     for (const language of langsToValidate) {
         const solutionCode = referenceSolutions[language];
-        const languageId = getJudge0LanguageId(language);
+        const languageId = getLanguageId(language);
 
         if (!languageId) {
             throw new Error(`Language ${language} is not supported`);
@@ -274,7 +275,7 @@ export const updateProblem = async (req, res) => {
             }
         }
 
-        // Conditional validation: only run Judge0 if critical fields changed
+        // Conditional validation: only re-run the executor if critical fields changed
         const needsValidation =
             (testcases && JSON.stringify(testcases) !== JSON.stringify(existingProblem.testcases)) ||
             (codeSnippets && JSON.stringify(codeSnippets) !== JSON.stringify(existingProblem.codeSnippets)) ||

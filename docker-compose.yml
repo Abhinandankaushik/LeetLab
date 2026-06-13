@@ -11,6 +11,11 @@ services:
       - REDIS_URL=redis://redis:6379
       - QUEUE_ENABLED=true
       - EXECUTION_CONCURRENCY=5
+      - EXECUTOR_LANGUAGES=python,gcc
+    volumes:
+      # Lets the backend talk to the host Docker Engine to manage the warm
+      # execution containers (code runs in sandboxed containers via the socket).
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - postgres-db
       - redis

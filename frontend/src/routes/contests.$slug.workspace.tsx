@@ -411,7 +411,7 @@ export default function ContestWorkspace() {
                         {running && (
                           <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground animate-pulse">
                             <Loader2 className="h-3 w-3 animate-spin" />
-                            Executing on Judge0 arena...
+                            Running in secure sandbox...
                           </div>
                         )}
                         {result && <ResultPanel sub={result} problem={activeProblem.problem} />}

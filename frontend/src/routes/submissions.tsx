@@ -26,12 +26,12 @@ const formatStat = (val: string | null, type: 'time' | 'memory' = 'time') => {
     const maxVal = Math.max(...values);
     
     if (type === 'time') {
-      // Judge0 time is in seconds. Convert to ms if small.
+      // Execution time is in seconds. Convert to ms if small.
       if (maxVal === 0) return "0 ms";
       if (maxVal < 1) return `${(maxVal * 1000).toFixed(0)} ms`;
       return `${maxVal.toFixed(3)} s`;
     } else {
-      // Judge0 memory is in KB. Convert to MB if large.
+      // Memory usage is in KB. Convert to MB if large.
       if (maxVal === 0) return "0 KB";
       if (maxVal > 1024) return `${(maxVal / 1024).toFixed(2)} MB`;
       return `${maxVal.toFixed(0)} KB`;
@@ -355,7 +355,7 @@ export default function SubmissionsPage() {
                       <div className="mt-4 p-4 rounded-2xl border border-border bg-muted/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
                          <div className="flex items-center gap-3">
                             <ShieldCheck className="h-5 w-5 text-muted-foreground/60 shrink-0" />
-                            <span className="text-[11px] md:text-xs font-bold text-muted-foreground">Plus {selectedSub.totalHiddenCases} hidden test cases verified on Judge0 arena.</span>
+                            <span className="text-[11px] md:text-xs font-bold text-muted-foreground">Plus {selectedSub.totalHiddenCases} hidden test cases verified in our secure sandbox.</span>
                          </div>
                          <div className="text-[11px] md:text-xs font-mono font-bold text-easy whitespace-nowrap">
                             {selectedSub.hiddenPassedCount} / {selectedSub.totalHiddenCases} PASSED

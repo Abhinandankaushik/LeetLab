@@ -36,7 +36,7 @@ const queueEvents = isQueueEnabled
 /**
  * Add an execution job and resolve with its result. The heavy work happens in
  * the worker (bounded concurrency), so many concurrent callers just wait their
- * turn instead of all hammering Judge0 at once.
+ * turn instead of all hammering the executor at once.
  */
 export const enqueueExecution = async (payload) => {
     if (!executionQueue || !queueEvents) {

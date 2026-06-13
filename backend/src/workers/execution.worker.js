@@ -8,7 +8,7 @@ import {
 import { processExecution } from "../libs/execution.service.js";
 
 // How many code executions may run concurrently. This is the throttle that keeps
-// Judge0 and the server from being overwhelmed when many users submit at once.
+// the executor and the server from being overwhelmed when many users submit at once.
 const concurrency = Number(process.env.EXECUTION_CONCURRENCY) || 5;
 
 let executionWorker = null;
@@ -26,7 +26,7 @@ export const startExecutionWorker = () => {
         {
             connection: buildConnection(),
             concurrency,
-            // Executions poll Judge0 for a while, so keep the lock alive long enough.
+            // Executions run for a while, so keep the lock alive long enough.
             lockDuration: Math.max(60000, EXECUTION_JOB_TIMEOUT_MS + 30000),
         }
     );

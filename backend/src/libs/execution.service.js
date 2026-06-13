@@ -1,11 +1,13 @@
-import { getLanguageName, runSubmissions } from "./judge0.lib.js";
+import { getLanguageName } from "../executor/languages.js";
+import { runSubmissions } from "../executor/index.js";
 import { db } from "./db.js";
 import { updateUserActivity, updateUserStreak } from "./activity.lib.js";
 
 /**
- * Heavy code-execution work: talk to Judge0, evaluate results and (on submit)
- * persist everything. This is the expensive part that we run inside a bounded
- * queue worker so concurrent users can't overwhelm Judge0 / the server.
+ * Heavy code-execution work: run the code in a sandboxed container, evaluate
+ * results and (on submit) persist everything. This is the expensive part that we
+ * run inside a bounded queue worker so concurrent users can't overwhelm the
+ * executor / the server.
  *
  * It is pure-ish: all the data it needs is passed in `payload` (no req/res), so
  * it can run either inside a BullMQ worker or inline as a fallback. It returns

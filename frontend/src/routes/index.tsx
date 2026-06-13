@@ -142,7 +142,7 @@ export default function HomePage() {
       {/* Features grid */}
       <section className="mx-auto max-w-7xl px-4 pb-20">
         <div className="grid gap-px overflow-hidden rounded-xl border border-border bg-border md:grid-cols-2 lg:grid-cols-3 stagger">
-          <Feature icon={Code2} title="Instant Feedback" body="Judge0-powered engine streams metrics for every run. Know your speed, know your worth." />
+          <Feature icon={Code2} title="Instant Feedback" body="Sandboxed execution engine streams runtime and memory for every run. Know your speed, know your worth." />
           <Feature icon={Layers} title="Focused Playlists" body="Grind by category — DP, Graphs, or System warmups. Level up exactly where it counts." />
           <Feature icon={Trophy} title="Battle Records" body="Every submission is logged. Deep-dive into your growth with per-testcase breakdowns." />
           <Feature icon={Zap} title="Omni-Language" body="Python, JS, Java, C++ — switch gears in one click. The workspace that never slows you down." />

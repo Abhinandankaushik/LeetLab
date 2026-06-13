@@ -34,7 +34,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="mt-4 list-inside list-disc space-y-2 text-muted-foreground">
               <li>Maintaining your profile and ranking on the leaderboard.</li>
-              <li>Executing and grading your code submissions via Judge0.</li>
+              <li>Executing and grading your code submissions in secure sandboxed containers.</li>
               <li>Providing personalized analytics and recommendations.</li>
               <li>Protecting the platform from abuse and cheating.</li>
             </ul>
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
               We do not sell your personal data. We share data only with necessary service providers:
             </p>
             <ul className="mt-4 list-inside list-disc space-y-2 text-muted-foreground">
-              <li><strong>Judge0:</strong> Code execution infrastructure.</li>
+              <li><strong>Sandboxed Containers:</strong> Isolated code execution infrastructure.</li>
               <li><strong>Supabase/Prisma:</strong> Database and authentication services.</li>
               <li><strong>Cloudflare:</strong> Performance and security.</li>
             </ul>

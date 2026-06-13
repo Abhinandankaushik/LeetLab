@@ -18,6 +18,7 @@ import analyticsRoute from "./routes/analytics.routes.js";
 import aiRoute from "./routes/ai.routes.js";
 import ratingRoute from "./routes/rating.routes.js";
 import { startExecutionWorker } from "./workers/execution.worker.js";
+import { initExecutor, shutdownExecutor } from "./executor/index.js";
 dotenv.config();
 
 const app = express();
@@ -55,6 +56,23 @@ app.use("/api/v1/ratings", ratingRoute);
 // QUEUE_ENABLED=false.
 startExecutionWorker();
 
+// Warm up the container pools (no-op unless CODE_EXECUTOR=docker). Runs in the
+// background so the HTTP server can start accepting requests immediately.
+initExecutor().catch((e) => console.error("[executor] init failed:", e.message));
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
+
+const gracefulShutdown = async (signal) => {
+    console.log(`\n${signal} received — shutting down executor pools...`);
+    try {
+        await shutdownExecutor();
+    } catch (e) {
+        console.error("[executor] shutdown error:", e.message);
+    }
+    process.exit(0);
+};
+
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));

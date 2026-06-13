@@ -61,10 +61,17 @@ export default function ProblemDetail() {
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const [editorSettings, setEditorSettings] = React.useState({
     fontSize: 14,
-    theme: "vs-dark",
+    theme: theme === "light" ? "leetlab-light" : "leetlab-dark",
     fontFamily: "JetBrains Mono, monospace",
     editorWidth: 60 // Default 60% for editor
   });
+
+  // Editor refs + live status (cursor position, selection, line count) for the
+  // interactive status bar and keyboard shortcuts.
+  const editorRef = React.useRef<any>(null);
+  const monacoRef = React.useRef<any>(null);
+  const handleRunRef = React.useRef<(isSubmit?: boolean) => void>(() => {});
+  const [editorStatus, setEditorStatus] = React.useState({ line: 1, col: 1, selected: 0, lines: 1 });
   const [isDragging, setIsDragging] = React.useState(false);
   const [consoleHeight, setConsoleHeight] = React.useState(40);
   const [isResizingConsole, setIsResizingConsole] = React.useState(false);
@@ -241,6 +248,23 @@ export default function ProblemDetail() {
     }
   };
 
+  // Keep the latest handleRun reachable from Monaco command callbacks (which
+  // capture a stale closure at mount time).
+  React.useEffect(() => {
+    handleRunRef.current = handleRun;
+  });
+
+  // Follow the app's light/dark mode for the editor — but only when the user is
+  // on one of the default themes (don't override hand-picked themes like Monokai).
+  React.useEffect(() => {
+    setEditorSettings((s) => {
+      const isDefault = ["leetlab-dark", "leetlab-light", "vs-dark", "light"].includes(s.theme);
+      if (!isDefault) return s;
+      const next = theme === "light" ? "leetlab-light" : "leetlab-dark";
+      return s.theme === next ? s : { ...s, theme: next };
+    });
+  }, [theme]);
+
   if (loading) {
     return (
       <div className="flex h-[calc(100vh-3.5rem)] items-center justify-center bg-background">
@@ -276,7 +300,7 @@ export default function ProblemDetail() {
       isFullscreen ? "fixed inset-0 z-50 h-screen w-screen" : "min-h-screen h-screen"
     )}>
       <div className={cn(
-        "flex-1 flex relative bg-[#0a0a0a]",
+        "flex-1 flex relative bg-background",
         isMobile ? "flex-col overflow-y-auto overflow-x-hidden" : "flex-row overflow-hidden"
       )}>
         {/* Workspace Background Grid */}
@@ -300,7 +324,7 @@ export default function ProblemDetail() {
                   </Link>
                   <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight text-white">{problem.title}</h1>
+                      <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight text-foreground">{problem.title}</h1>
                       <DifficultyBadge value={problem.defficulty} />
                     </div>
                     <Button
@@ -511,19 +535,128 @@ export default function ProblemDetail() {
                 value={code}
                 onChange={(v) => setCode(v ?? "")}
                 beforeMount={(monaco) => {
+                  // Shared, richly-coloured token rules for readable syntax
+                  // highlighting (GitHub-inspired palettes).
+                  const darkRules = [
+                    { token: 'comment', foreground: '8b949e', fontStyle: 'italic' },
+                    { token: 'keyword', foreground: 'ff7b72' },
+                    { token: 'keyword.control', foreground: 'ff7b72' },
+                    { token: 'operator', foreground: 'ff7b72' },
+                    { token: 'operators', foreground: 'ff7b72' },
+                    { token: 'string', foreground: 'a5d6ff' },
+                    { token: 'string.escape', foreground: '79c0ff' },
+                    { token: 'number', foreground: '79c0ff' },
+                    { token: 'regexp', foreground: '7ee787' },
+                    { token: 'type', foreground: 'ffa657' },
+                    { token: 'type.identifier', foreground: 'ffa657' },
+                    { token: 'namespace', foreground: 'ffa657' },
+                    { token: 'function', foreground: 'd2a8ff' },
+                    { token: 'variable', foreground: 'e6edf3' },
+                    { token: 'variable.predefined', foreground: '79c0ff' },
+                    { token: 'constant', foreground: '79c0ff' },
+                    { token: 'delimiter', foreground: '8b949e' },
+                    { token: 'tag', foreground: '7ee787' },
+                    { token: 'attribute.name', foreground: '79c0ff' },
+                    { token: 'attribute.value', foreground: 'a5d6ff' },
+                  ];
+                  const lightRules = [
+                    { token: 'comment', foreground: '6e7781', fontStyle: 'italic' },
+                    { token: 'keyword', foreground: 'cf222e' },
+                    { token: 'keyword.control', foreground: 'cf222e' },
+                    { token: 'operator', foreground: 'cf222e' },
+                    { token: 'operators', foreground: 'cf222e' },
+                    { token: 'string', foreground: '0a3069' },
+                    { token: 'string.escape', foreground: '0550ae' },
+                    { token: 'number', foreground: '0550ae' },
+                    { token: 'regexp', foreground: '116329' },
+                    { token: 'type', foreground: '953800' },
+                    { token: 'type.identifier', foreground: '953800' },
+                    { token: 'namespace', foreground: '953800' },
+                    { token: 'function', foreground: '8250df' },
+                    { token: 'variable', foreground: '1f2328' },
+                    { token: 'constant', foreground: '0550ae' },
+                    { token: 'delimiter', foreground: '6e7781' },
+                    { token: 'tag', foreground: '116329' },
+                    { token: 'attribute.name', foreground: '0550ae' },
+                    { token: 'attribute.value', foreground: '0a3069' },
+                  ];
+
+                  // Primary dark theme (matches the app's dark mode)
+                  monaco.editor.defineTheme('leetlab-dark', {
+                    base: 'vs-dark',
+                    inherit: true,
+                    rules: darkRules,
+                    colors: {
+                      'editor.background': '#0d1117',
+                      'editor.foreground': '#e6edf3',
+                      'editorLineNumber.foreground': '#484f58',
+                      'editorLineNumber.activeForeground': '#c9d1d9',
+                      'editor.selectionBackground': '#264f78',
+                      'editor.inactiveSelectionBackground': '#264f7855',
+                      'editor.lineHighlightBackground': '#161b2280',
+                      'editorCursor.foreground': '#58a6ff',
+                      'editorIndentGuide.background': '#21262d',
+                      'editorIndentGuide.activeBackground': '#30363d',
+                      'editorBracketMatch.background': '#3fb95033',
+                      'editorBracketMatch.border': '#3fb95080',
+                      'editorWidget.background': '#161b22',
+                      'editorWidget.border': '#30363d',
+                      'editorSuggestWidget.background': '#161b22',
+                      'editorSuggestWidget.selectedBackground': '#1f6feb44',
+                      'scrollbarSlider.background': '#484f5855',
+                      'scrollbarSlider.hoverBackground': '#484f5888',
+                      'editorStickyScroll.background': '#0d1117',
+                    },
+                  });
+
+                  // Primary light theme (soft, matches the app's light mode)
+                  monaco.editor.defineTheme('leetlab-light', {
+                    base: 'vs',
+                    inherit: true,
+                    rules: lightRules,
+                    colors: {
+                      'editor.background': '#fbfcfe',
+                      'editor.foreground': '#1f2328',
+                      'editorLineNumber.foreground': '#aab1bd',
+                      'editorLineNumber.activeForeground': '#1f2328',
+                      'editor.selectionBackground': '#b6d7ff80',
+                      'editor.lineHighlightBackground': '#eef2f7',
+                      'editorCursor.foreground': '#2563eb',
+                      'editorIndentGuide.background': '#e6e9ee',
+                      'editorIndentGuide.activeBackground': '#c4cad3',
+                      'editorBracketMatch.background': '#2563eb1f',
+                      'editorBracketMatch.border': '#2563eb55',
+                      'editorWidget.background': '#ffffff',
+                      'editorWidget.border': '#e6e9ee',
+                      'scrollbarSlider.background': '#c4cad366',
+                      'editorStickyScroll.background': '#fbfcfe',
+                    },
+                  });
+
                   // Oceanic Blue
                   monaco.editor.defineTheme('oceanic', {
                     base: 'vs-dark',
                     inherit: true,
-                    rules: [{ token: '', foreground: 'd4d4d4', background: '1b2b34' }],
+                    rules: [
+                      { token: 'comment', foreground: '65737e', fontStyle: 'italic' },
+                      { token: 'keyword', foreground: 'c594c5' },
+                      { token: 'operator', foreground: 'c594c5' },
+                      { token: 'string', foreground: '99c794' },
+                      { token: 'number', foreground: 'f99157' },
+                      { token: 'type', foreground: 'fac863' },
+                      { token: 'function', foreground: '6699cc' },
+                      { token: 'constant', foreground: 'f99157' },
+                    ],
                     colors: {
                       'editor.background': '#1b2b34',
                       'editor.foreground': '#d4d4d4',
                       'editorLineNumber.foreground': '#4f5b66',
                       'editor.selectionBackground': '#4f5b6650',
                       'editor.lineHighlightBackground': '#24343d',
-                      'editorCursor.foreground': '#6699cc'
-                    }
+                      'editorCursor.foreground': '#6699cc',
+                      'editorIndentGuide.background': '#2b3a42',
+                      'editorIndentGuide.activeBackground': '#3e515b',
+                    },
                   });
 
                   // Monokai
@@ -531,9 +664,15 @@ export default function ProblemDetail() {
                     base: 'vs-dark',
                     inherit: true,
                     rules: [
-                      { token: 'comment', foreground: '75715e' },
+                      { token: 'comment', foreground: '75715e', fontStyle: 'italic' },
                       { token: 'keyword', foreground: 'f92672' },
-                      { token: 'string', foreground: 'e6db74' }
+                      { token: 'operator', foreground: 'f92672' },
+                      { token: 'string', foreground: 'e6db74' },
+                      { token: 'number', foreground: 'ae81ff' },
+                      { token: 'constant', foreground: 'ae81ff' },
+                      { token: 'type', foreground: '66d9ef', fontStyle: 'italic' },
+                      { token: 'function', foreground: 'a6e22e' },
+                      { token: 'variable', foreground: 'f8f8f2' },
                     ],
                     colors: {
                       'editor.background': '#272822',
@@ -541,8 +680,10 @@ export default function ProblemDetail() {
                       'editorLineNumber.foreground': '#90908a',
                       'editor.selectionBackground': '#49483e',
                       'editor.lineHighlightBackground': '#3e3d32',
-                      'editorCursor.foreground': '#f8f8f0'
-                    }
+                      'editorCursor.foreground': '#f8f8f0',
+                      'editorIndentGuide.background': '#3b3a32',
+                      'editorIndentGuide.activeBackground': '#595849',
+                    },
                   });
 
                   // Cyberpunk Neon
@@ -550,9 +691,14 @@ export default function ProblemDetail() {
                     base: 'vs-dark',
                     inherit: true,
                     rules: [
+                      { token: 'comment', foreground: '32cd32', fontStyle: 'italic' },
                       { token: 'keyword', foreground: 'ff00ff', fontStyle: 'bold' },
+                      { token: 'operator', foreground: 'ff5edb' },
                       { token: 'string', foreground: '00ffff' },
-                      { token: 'comment', foreground: '32cd32', fontStyle: 'italic' }
+                      { token: 'number', foreground: 'fffb00' },
+                      { token: 'type', foreground: 'ff8a00' },
+                      { token: 'function', foreground: '00ff9f' },
+                      { token: 'constant', foreground: 'fffb00' },
                     ],
                     colors: {
                       'editor.background': '#10002b',
@@ -560,8 +706,10 @@ export default function ProblemDetail() {
                       'editorLineNumber.foreground': '#7b2cbf',
                       'editor.selectionBackground': '#5a189a',
                       'editor.lineHighlightBackground': '#240046',
-                      'editorCursor.foreground': '#ff00ff'
-                    }
+                      'editorCursor.foreground': '#ff00ff',
+                      'editorIndentGuide.background': '#2d0a52',
+                      'editorIndentGuide.activeBackground': '#5a189a',
+                    },
                   });
 
                   // One Dark
@@ -569,9 +717,15 @@ export default function ProblemDetail() {
                     base: 'vs-dark',
                     inherit: true,
                     rules: [
+                      { token: 'comment', foreground: '5c6370', fontStyle: 'italic' },
                       { token: 'keyword', foreground: 'c678dd' },
+                      { token: 'operator', foreground: '56b6c2' },
                       { token: 'string', foreground: '98c379' },
-                      { token: 'identifier', foreground: '61afef' }
+                      { token: 'number', foreground: 'd19a66' },
+                      { token: 'type', foreground: 'e5c07b' },
+                      { token: 'function', foreground: '61afef' },
+                      { token: 'constant', foreground: 'd19a66' },
+                      { token: 'variable', foreground: 'e06c75' },
                     ],
                     colors: {
                       'editor.background': '#282c34',
@@ -579,18 +733,51 @@ export default function ProblemDetail() {
                       'editorLineNumber.foreground': '#4b5263',
                       'editor.selectionBackground': '#3e4451',
                       'editor.lineHighlightBackground': '#2c313c',
-                      'editorCursor.foreground': '#528bff'
-                    }
+                      'editorCursor.foreground': '#528bff',
+                      'editorIndentGuide.background': '#3b4048',
+                      'editorIndentGuide.activeBackground': '#545862',
+                    },
                   });
                 }}
                 onMount={(editor, monaco) => {
-                  // No-op or extra setup if needed
+                  editorRef.current = editor;
+                  monacoRef.current = monaco;
+
+                  // Keyboard shortcuts: Ctrl/Cmd+Enter = Run, +Shift = Submit.
+                  editor.addAction({
+                    id: "leetlab-run",
+                    label: "Run Code",
+                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
+                    run: () => handleRunRef.current?.(false),
+                  });
+                  editor.addAction({
+                    id: "leetlab-submit",
+                    label: "Submit Code",
+                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+                    run: () => handleRunRef.current?.(true),
+                  });
+
+                  const updateStatus = () => {
+                    const pos = editor.getPosition();
+                    const model = editor.getModel();
+                    const sel = editor.getSelection();
+                    const selected = sel && model ? model.getValueInRange(sel).length : 0;
+                    setEditorStatus({
+                      line: pos?.lineNumber ?? 1,
+                      col: pos?.column ?? 1,
+                      selected,
+                      lines: model?.getLineCount() ?? 1,
+                    });
+                  };
+                  editor.onDidChangeCursorSelection(updateStatus);
+                  editor.onDidChangeModelContent(updateStatus);
+                  updateStatus();
                 }}
                 options={{
                   fontFamily: editorSettings.fontFamily,
                   fontSize: editorSettings.fontSize,
-                  lineHeight: 1.6, // More breathing room
-                  letterSpacing: 0.5,
+                  lineHeight: 1.7, // More breathing room
+                  letterSpacing: 0.4,
                   minimap: { enabled: false },
                   scrollBeyondLastLine: false,
                   padding: { top: 20, bottom: 20 },
@@ -598,20 +785,31 @@ export default function ProblemDetail() {
                   cursorSmoothCaretAnimation: "on",
                   cursorBlinking: "smooth", // Modern smooth blink
                   cursorStyle: "line",
+                  cursorWidth: 2,
                   smoothScrolling: true,
+                  mouseWheelZoom: true, // Ctrl + wheel to zoom
                   lineNumbersMinChars: 4,
+                  roundedSelection: true,
+                  matchBrackets: "always",
+                  selectionHighlight: true,
+                  stickyScroll: { enabled: true }, // keep current scope pinned on top
                   bracketPairColorization: { enabled: true },
                   guides: {
                     indentation: true,
-                    bracketPairs: true
+                    bracketPairs: true,
+                    highlightActiveIndentation: true,
+                    highlightActiveBracketPair: true,
                   },
                   renderLineHighlight: "all", // Highlight whole line
-                  renderWhitespace: "none",
+                  renderWhitespace: "selection",
                   suggestOnTriggerCharacters: true,
                   quickSuggestions: { other: true, comments: true, strings: true },
+                  tabSize: 4,
+                  fixedOverflowWidgets: true,
                   scrollbar: {
-                    verticalScrollbarSize: 8,
-                    horizontalScrollbarSize: 8,
+                    verticalScrollbarSize: 10,
+                    horizontalScrollbarSize: 10,
+                    useShadows: true,
                   },
                   fontLigatures: true,
                 }}
@@ -624,6 +822,31 @@ export default function ProblemDetail() {
                     {lang.name}
                   </span>
                 </div>
+              </div>
+            </div>
+
+            {/* Interactive status bar */}
+            <div className="flex items-center justify-between gap-3 border-t border-border/40 bg-background/60 px-4 py-1 font-mono text-[10px] text-muted-foreground backdrop-blur-xl shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="flex items-center gap-1.5 text-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  {lang.name}
+                </span>
+                <span className="text-border">|</span>
+                <span>Ln {editorStatus.line}, Col {editorStatus.col}</span>
+                {editorStatus.selected > 0 && (
+                  <>
+                    <span className="text-border">|</span>
+                    <span className="text-primary">{editorStatus.selected} selected</span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2.5">
+                <span>{editorStatus.lines} {editorStatus.lines === 1 ? "line" : "lines"}</span>
+                <span className="text-border hidden sm:inline">|</span>
+                <span className="hidden sm:inline">Spaces: 4</span>
+                <span className="text-border hidden md:inline">|</span>
+                <span className="hidden md:inline text-muted-foreground/80">⌘/Ctrl+↵ Run · ⇧+↵ Submit</span>
               </div>
             </div>
           </div>
@@ -657,7 +880,7 @@ export default function ProblemDetail() {
               {running && (
                 <div className="flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  Executing on Judge0 arena...
+                  Running in secure sandbox...
                 </div>
               )}
               {result && <ResultPanel sub={result} problem={problem} />}

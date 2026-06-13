@@ -192,12 +192,13 @@ export function EditorToolbar({
               <Palette className="h-4 w-4" /> Appearance
             </DropdownMenuLabel>
             <DropdownMenuRadioGroup value={settings.theme} onValueChange={(v) => onSettingsChange({ ...settings, theme: v })}>
-              <DropdownMenuRadioItem value="vs-dark">Dark (VS Code)</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="light">Light</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="leetlab-dark">LeetLab Dark</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="leetlab-light">LeetLab Light</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="oceanic">Oceanic Blue</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="monokai">Monokai</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="cyberpunk">Cyberpunk Neon</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="one-dark">One Dark</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="vs-dark">Dark (VS Code)</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="hc-black">High Contrast</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>

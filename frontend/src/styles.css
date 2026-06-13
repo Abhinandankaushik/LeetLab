@@ -45,22 +45,22 @@
   --radius: 0.5rem;
   --background: oklch(0.16 0.012 250);
   --foreground: oklch(0.96 0.005 250);
-  --card: oklch(0.20 0.014 250);
-  --card-foreground: oklch(0.96 0.005 250);
-  --popover: oklch(0.20 0.014 250);
-  --popover-foreground: oklch(0.96 0.005 250);
-  --primary: oklch(0.82 0.19 145);
-  --primary-foreground: oklch(0.16 0.012 250);
-  --secondary: oklch(0.26 0.018 250);
-  --secondary-foreground: oklch(0.96 0.005 250);
-  --muted: oklch(0.24 0.016 250);
-  --muted-foreground: oklch(0.68 0.018 250);
-  --accent: oklch(0.72 0.16 220);
-  --accent-foreground: oklch(0.16 0.012 250);
+  --card: oklch(0.215 0.015 250);
+  --card-foreground: oklch(0.97 0.005 250);
+  --popover: oklch(0.215 0.015 250);
+  --popover-foreground: oklch(0.97 0.005 250);
+  --primary: oklch(0.84 0.20 145);
+  --primary-foreground: oklch(0.15 0.012 250);
+  --secondary: oklch(0.27 0.018 250);
+  --secondary-foreground: oklch(0.97 0.005 250);
+  --muted: oklch(0.25 0.016 250);
+  --muted-foreground: oklch(0.75 0.022 250);
+  --accent: oklch(0.74 0.17 220);
+  --accent-foreground: oklch(0.15 0.012 250);
   --destructive: oklch(0.66 0.22 22);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.28 0.018 250);
-  --input: oklch(0.24 0.016 250);
+  --border: oklch(0.345 0.021 250);
+  --input: oklch(0.25 0.016 250);
   --ring: oklch(0.82 0.19 145);
   --easy: oklch(0.78 0.17 150);
   --medium: oklch(0.78 0.16 80);
@@ -78,42 +78,44 @@
   --card-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.35);
 }
 
-/* LIGHT THEME — soft, modern, slightly tinted so white cards lift off the page */
+/* LIGHT THEME — clean, bright, modern (Linear / Vercel / Stripe inspired):
+   a crisp near-white canvas with soft colour glows, no muddy grain film. */
 [data-theme="light"] {
   --radius: 0.5rem;
-  --background: oklch(0.975 0.006 255);
-  --foreground: oklch(0.20 0.02 260);
+  --background: oklch(0.984 0.004 255);
+  --foreground: oklch(0.18 0.022 260);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.20 0.02 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.20 0.02 260);
-  --primary: oklch(0.53 0.19 150);
+  --primary: oklch(0.52 0.20 150);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.945 0.008 255);
+  --secondary: oklch(0.94 0.009 255);
   --secondary-foreground: oklch(0.22 0.02 260);
-  --muted: oklch(0.955 0.007 255);
-  --muted-foreground: oklch(0.47 0.018 260);
-  --accent: oklch(0.55 0.17 235);
+  --muted: oklch(0.95 0.008 255);
+  --muted-foreground: oklch(0.44 0.022 260);
+  --accent: oklch(0.54 0.18 235);
   --accent-foreground: oklch(0.99 0 0);
-  --destructive: oklch(0.57 0.22 25);
+  --destructive: oklch(0.56 0.23 25);
   --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.905 0.009 255);
-  --input: oklch(0.935 0.009 255);
-  --ring: oklch(0.53 0.19 150);
-  --easy: oklch(0.52 0.17 150);
-  --medium: oklch(0.60 0.16 70);
-  --hard: oklch(0.57 0.22 25);
-  --success: oklch(0.52 0.17 150);
-  --glow: oklch(0.53 0.19 150 / 0.22);
-  --grid-color: oklch(0.45 0.05 260 / 0.05);
-  /* Atmosphere — keep the page airy: faint grain, soft cool vignette, no harsh black */
-  --grain-opacity: 0.18;
-  --vignette: color-mix(in oklab, var(--accent) 6%, transparent);
-  --vignette-blend: multiply;
-  --ambient-1: color-mix(in oklab, var(--primary) 9%, transparent);
-  --ambient-2: color-mix(in oklab, var(--accent) 10%, transparent);
-  --shadow-color: 255deg 35% 50%;
-  --card-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.06), 0 6px 18px -10px hsl(var(--shadow-color) / 0.18);
+  --border: oklch(0.87 0.013 258);
+  --input: oklch(0.90 0.011 258);
+  --ring: oklch(0.52 0.20 150);
+  --easy: oklch(0.51 0.18 150);
+  --medium: oklch(0.58 0.16 70);
+  --hard: oklch(0.56 0.23 25);
+  --success: oklch(0.51 0.18 150);
+  --glow: oklch(0.52 0.20 150 / 0.25);
+  --grid-color: oklch(0.45 0.06 260 / 0.05);
+  /* Atmosphere — bright & airy: NO grain film (it muddies white), no vignette
+     darkening, just soft colour glows for a modern SaaS feel. */
+  --grain-opacity: 0;
+  --vignette: transparent;
+  --vignette-blend: normal;
+  --ambient-1: color-mix(in oklab, var(--primary) 14%, transparent);
+  --ambient-2: color-mix(in oklab, var(--accent) 15%, transparent);
+  --shadow-color: 250deg 40% 45%;
+  --card-shadow: 0 1px 2px hsl(var(--shadow-color) / 0.07), 0 10px 26px -14px hsl(var(--shadow-color) / 0.20);
 }
 
 @layer base {
@@ -213,13 +215,19 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: color-mix(in oklab, var(--primary) 25%, var(--muted));
+    background: color-mix(in oklab, var(--primary) 40%, var(--muted));
     border-radius: 8px;
     border: 2px solid var(--background);
+    transition: background 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
     background: var(--primary);
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-color: color-mix(in oklab, var(--primary) 40%, var(--muted)) transparent;
   }
 
   a,
@@ -537,28 +545,34 @@
 
   /* Hover utilities */
   .hover-lift {
-    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.3s ease;
   }
 
   .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 40px -20px color-mix(in oklab, var(--primary) 25%, transparent);
+    transform: translateY(-6px);
+    border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
+    box-shadow:
+      0 24px 50px -22px color-mix(in oklab, var(--primary) 38%, transparent),
+      0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent);
   }
 
   .hover-glow {
-    transition: box-shadow 0.4s ease, transform 0.3s ease;
+    transition: box-shadow 0.4s ease, transform 0.3s ease, border-color 0.3s ease;
   }
 
   .hover-glow:hover {
-    box-shadow: 0 0 0 1px var(--primary), 0 0 30px var(--glow);
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--primary) 55%, var(--border));
+    box-shadow: 0 0 0 1px var(--primary), 0 0 36px var(--glow), 0 12px 28px -16px var(--glow);
   }
 
   .hover-tilt {
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
   }
 
   .hover-tilt:hover {
-    transform: perspective(800px) rotateX(2deg) rotateY(-2deg) translateY(-2px);
+    transform: perspective(800px) rotateX(2deg) rotateY(-2deg) translateY(-3px) scale(1.01);
+    box-shadow: 0 18px 40px -22px var(--glow);
   }
 
   /* Animated underline link */
@@ -661,16 +675,36 @@
     backdrop-filter: blur(12px) saturate(1.4);
     -webkit-backdrop-filter: blur(12px) saturate(1.4);
     border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+    transition: border-color 0.3s ease, box-shadow 0.35s ease, background-color 0.3s ease;
+  }
+
+  .glass:hover {
+    border-color: color-mix(in oklab, var(--primary) 40%, var(--border));
+    box-shadow: 0 12px 34px -18px var(--glow);
   }
 
   /* Soft glow on hover — lighter than hover-glow */
   .hover-glow-soft {
-    transition: box-shadow 0.4s ease, transform 0.3s ease, border-color 0.3s ease;
+    transition: box-shadow 0.4s ease, transform 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
   }
 
   .hover-glow-soft:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in oklab, var(--primary) 55%, var(--border));
+    background-color: color-mix(in oklab, var(--primary) 5%, var(--card));
+    box-shadow: 0 16px 38px -16px var(--glow), 0 0 0 1px color-mix(in oklab, var(--primary) 22%, transparent);
+  }
+
+  /* Generic interactive surface — readable lift + clear border accent on hover */
+  .hover-card {
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.3s ease, background-color 0.3s ease;
+  }
+
+  .hover-card:hover {
+    transform: translateY(-4px);
     border-color: color-mix(in oklab, var(--primary) 50%, var(--border));
-    box-shadow: 0 10px 30px -12px var(--glow);
+    background-color: color-mix(in oklab, var(--primary) 4%, var(--card));
+    box-shadow: 0 18px 40px -20px color-mix(in oklab, var(--primary) 30%, transparent);
   }
 
   /* Cursor-following spotlight. Add `spotlight` class + `data-spotlight`; a global
@@ -686,9 +720,9 @@
     inset: 0;
     border-radius: inherit;
     background: radial-gradient(
-      260px circle at var(--mx, 50%) var(--my, 0%),
-      color-mix(in oklab, var(--primary) 22%, transparent),
-      transparent 60%
+      300px circle at var(--mx, 50%) var(--my, 0%),
+      color-mix(in oklab, var(--primary) 30%, transparent),
+      transparent 62%
     );
     opacity: 0;
     transition: opacity 0.35s ease;

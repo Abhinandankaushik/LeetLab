@@ -43,7 +43,7 @@ tumhe meine reflab ka ek folder provide kiya hai jaha frontend ka component impl
 - **Reference Solutions**: Community and editorial solutions with syntax highlighting
 
 ### ⚡ Code Execution
-- **Judge0 Integration**: Sandboxed remote code execution
+- **Warm-Container Engine**: Sandboxed code execution in a pool of pre-warmed Docker containers (compile once, run many)
 - **Performance Metrics**: Memory usage, execution time tracking
 - **Detailed Test Results**: Per-test-case stdout, stderr, compilation output
 - **Code Snippets**: Language-specific boilerplate templates for each problem
@@ -102,8 +102,8 @@ tumhe meine reflab ka ek folder provide kiya hai jaha frontend ka component impl
 | **Database** | PostgreSQL 15+ | Relational database |
 | **Auth** | JWT + HttpOnly Cookies | Secure stateless authentication |
 | **Password Security** | bcryptjs | Password hashing with salt rounds |
-| **External API** | Judge0 | Remote code execution service |
-| **HTTP Client** | Axios | API requests to Judge0 |
+| **Code Execution** | Docker + dockerode | Warm-container sandbox (compile once, run many) |
+| **Queue** | BullMQ + Redis | Bounded-concurrency execution throttling |
 | **Middleware** | CORS, Cookie-Parser | Request handling |
 | **Environment** | dotenv | Configuration management |
 
@@ -111,7 +111,7 @@ tumhe meine reflab ka ek folder provide kiya hai jaha frontend ka component impl
 | Component | Tech | Purpose |
 |-----------|------|---------|
 | **Database** | PostgreSQL | Data persistence |
-| **Code Execution** | Judge0 API | Sandboxed compilation & execution |
+| **Code Execution** | Docker warm-container pool | Sandboxed compilation & execution |
 | **API Version** | REST (v1) | Versioned API for backwards compatibility |
 | **Session** | HttpOnly Cookies | Secure credential storage |
 | **Development** | Nodemon | Auto-reload on file changes |
@@ -159,7 +159,7 @@ graph TB
 
         subgraph Libs ["Library Layer"]
             DB["🗄️ db.js<br/>(Prisma ORM)"]
-            Judge0Lib["⚖️ judge0.lib.js"]
+            Executor["⚙️ executor/<br/>(warm-container pool)"]
             ActivityLib["📊 activity.lib.js"]
             AuthMW["🔒 auth.middleware"]
         end
@@ -167,7 +167,7 @@ graph TB
 
     subgraph External ["🔌 EXTERNAL SERVICES"]
         Postgres[("🗄️ PostgreSQL<br/>Database")]
-        Judge0["⚖️ Judge0 API<br/>(Code Execution)"]
+        Docker["🐳 Docker Engine<br/>(Sandboxed Execution)"]
     end
 
     Components --> Routing
@@ -197,12 +197,12 @@ graph TB
     AuthC --> DB
     ProblemC --> DB
     SubC --> DB
-    CodeC --> Judge0Lib
-    Judge0Lib --> Judge0
+    CodeC --> Executor
+    Executor --> Docker
     
     DB --> Postgres
-    Judge0 -->|Results| Judge0Lib
-    Judge0Lib --> ActivityLib
+    Docker -->|Results| Executor
+    Executor --> ActivityLib
     ActivityLib --> DB
 
     style Frontend fill:#1e40af,stroke:#0284c7,color:#fff,stroke-width:3px
@@ -219,7 +219,7 @@ sequenceDiagram
     participant Frontend as 🎨 React App
     participant API as 🌐 API Client
     participant Backend as ⚙️ Express Backend
-    participant Judge0 as ⚖️ Judge0 Service
+    participant Executor as 🐳 Warm-Container Pool
     participant Database as 🗄️ PostgreSQL
 
     User->>Frontend: Clicks "Submit" button
@@ -233,14 +233,10 @@ sequenceDiagram
     Backend->>Database: Create Submission record
     Database-->>Backend: Return submission ID
     
-    Backend->>Judge0: POST batch submission
-    Note over Judge0: Queue for compilation
-    Judge0->>Judge0: Compile code
-    Judge0->>Judge0: Run all test cases
-    Judge0-->>Backend: Return token
-    
-    Backend->>Judge0: Poll results (token)
-    Judge0-->>Backend: Return all results
+    Backend->>Executor: Borrow warm container
+    Note over Executor: Compile once
+    Executor->>Executor: Run all test cases (reusing artifact)
+    Executor-->>Backend: Return per-testcase results
     
     Backend->>Database: Create TestCaseResult entries
     Backend->>Database: Update ProblemSolved (if accepted)
@@ -865,7 +861,7 @@ LeetLab/
 │       │   ├── auth.controller.js     # register, login, logout
 │       │   ├── problem.controller.js  # CRUD problems, test case validation
 │       │   ├── submission.controller.js # Save & process submissions
-│       │   ├── execute-code.controller.js # Judge0 integration
+│       │   ├── execute-code.controller.js # Code execution endpoint
 │       │   ├── discussion.controller.js # Forum management
 │       │   ├── playlist.controller.js # Playlist operations
 │       │   ├── contests.controller.js # Contest management
@@ -874,9 +870,17 @@ LeetLab/
 │       │
 │       ├── libs/                      # Shared utilities
 │       │   ├── db.js                  # Prisma client instance
-│       │   ├── judge0.lib.js          # Judge0 API wrapper
+│       │   ├── execution.service.js   # Run code, evaluate & persist results
+│       │   ├── queue.js               # BullMQ execution queue
 │       │   ├── activity.lib.js        # Heatmap & streak logic
 │       │   └── auth.middleware.js     # JWT verification
+│       │
+│       ├── executor/                  # Warm-container code execution engine
+│       │   ├── index.js               # runSubmissions + pool lifecycle
+│       │   ├── languages.js           # Language/image config & id maps
+│       │   ├── pool.js                # Container pool (acquire/release/recycle)
+│       │   ├── dockerExecutor.js      # Compile once, run many
+│       │   └── docker.client.js       # dockerode client & exec helpers
 │       │
 │       └── middleware/
 │           └── auth.middleware.js     # Protected route middleware
@@ -1121,7 +1125,8 @@ LeetLab/
 - **npm** v9 or later
 - **PostgreSQL** v14 or later
 - **Git** for version control
-- **Judge0 API Key** (get from [judge0.com](https://judge0.com))
+- **Docker** (Docker Desktop / Engine) — required by the warm-container code executor
+- **Redis** (optional) — only if you enable the execution queue (`QUEUE_ENABLED=true`)
 
 ### Step 1: Clone Repository
 
@@ -1142,10 +1147,12 @@ npm install
 cat > .env << EOF
 DATABASE_URL="postgresql://user:password@localhost:5432/leetlab"
 JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
-JUDGE0_API_URL="https://judge0-ce.p.rapidapi.com"
-JUDGE0_API_KEY="your-judge0-api-key"
 PORT=3000
 NODE_ENV="development"
+# Code execution (warm-container pool). Requires Docker running.
+EXECUTOR_LANGUAGES="python,gcc"
+# Optional execution queue (needs Redis). Leave false to run inline.
+QUEUE_ENABLED="false"
 EOF
 
 # Create database and run migrations
@@ -1255,7 +1262,7 @@ LeetLab employs a sophisticated design language combining transparency, depth, a
    - Stateless backend (horizontal scaling)
    - Database indexing on frequent queries
    - Frontend state caching via React Query patterns
-   - Batch submission APIs for Judge0 efficiency
+   - Warm-container pool + bounded-concurrency queue for efficient execution
 
 3. **Security**
    - JWT in HttpOnly cookies (CSRF protected)
@@ -1269,7 +1276,7 @@ LeetLab employs a sophisticated design language combining transparency, depth, a
    - Image optimization (responsive imgs)
    - API response caching (stale-while-revalidate)
    - Database query optimization (eager loading)
-   - Submission batching to Judge0
+   - Compile-once / run-many execution in warm containers
 
 5. **User Experience**
    - Real-time feedback on code execution
@@ -1335,7 +1342,9 @@ This project is licensed under the MIT License - see [LICENSE.md](LICENSE.md) fo
 
 ## 🙏 Acknowledgments
 
-- [Judge0](https://judge0.com) - Code execution engine
+- [Docker](https://www.docker.com) - Sandboxed code execution
+- [dockerode](https://github.com/apocas/dockerode) - Docker Engine API client
+- [BullMQ](https://bullmq.io) - Execution queue
 - [Shadcn/UI](https://shadcn-ui.com) - Component library
 - [Tailwind CSS](https://tailwindcss.com) - Styling framework
 - [Prisma](https://www.prisma.io) - Database ORM

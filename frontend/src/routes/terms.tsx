@@ -36,7 +36,7 @@ export default function TermsPage() {
           <section>
             <h2 className="font-display text-2xl font-bold">3. Code Submission & Execution</h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              When you submit code on LeetLab, it is executed on our servers using Judge0 technology.
+              When you submit code on LeetLab, it runs on our servers inside isolated, sandboxed containers.
             </p>
             <ul className="mt-4 list-inside list-disc space-y-2 text-muted-foreground">
               <li>You retain ownership of the code you write.</li>
