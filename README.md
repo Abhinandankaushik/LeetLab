@@ -10,13 +10,18 @@
 
 **LeetLab** is a modern, high-performance competitive coding platform that enables developers to create, solve, and discuss complex algorithmic problems. It pairs a premium glassmorphism UI with a self-hosted warm-container code executor, real-time discussions over WebSockets, contests, activity tracking, and community engagement tools — every screen is wired to the backend with no static data.
 
+> 🧱 **Monorepo** — the codebase is a [Turborepo](https://turborepo.com/) with
+> npm workspaces. Apps live under `apps/*` and shared code under `packages/*`
+> (notably `@repo/db`, the Prisma layer shared by the backend and WS services).
+
 ### 🧩 Services at a glance
 
-| Service | Folder | Default Port | Responsibility |
-|---------|--------|--------------|----------------|
-| **Frontend** | `frontend/` | `5173` | React + Vite single-page app |
-| **Backend API** | `backend/` | `3000` | Express REST API, auth, executor orchestration |
-| **Realtime (WebSocket)** | `ws/` | `4001` | Live discussion messaging relay |
+| Service | Location | Default Port | Responsibility |
+|---------|----------|--------------|----------------|
+| **Frontend** | `apps/frontend/` | `5173` | React + Vite single-page app |
+| **Backend API** | `apps/backend/` | `3000` | Express REST API, auth, executor orchestration |
+| **Realtime (WebSocket)** | `apps/ws/` | `4001` | Live discussion messaging relay |
+| **Database package** | `packages/db/` | — | Shared Prisma client + schema/migrations (`@repo/db`) |
 | **PostgreSQL** | (Docker) | `5432` | Primary data store |
 | **Redis** | (Docker) | `6379` | Optional execution queue (BullMQ) |
 | **Docker Engine** | host socket | — | Warm-container code sandbox |
@@ -129,7 +134,7 @@
 | **Middleware** | CORS, Cookie-Parser | Request handling |
 | **Environment** | dotenv | Configuration management |
 
-### Realtime Service (`ws/`)
+### Realtime Service (`apps/ws/`)
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
 | **Runtime** | Node.js (ES Modules) | Standalone process |
@@ -327,7 +332,7 @@ graph LR
 
 ### 4️⃣ Real-time Discussion Flow (WebSocket)
 
-The WS server (`ws/`) is a stateless relay. Persistence always goes through the REST API; the relay only mirrors live activity to everyone in the same room (a room key = discussion id).
+The WS server (`apps/ws/`) is a stateless relay. Persistence always goes through the REST API; the relay only mirrors live activity to everyone in the same room (a room key = discussion id).
 
 ```mermaid
 sequenceDiagram
@@ -931,134 +936,96 @@ model UserActivity {
 ## 📁 Project Structure
 
 ```
-LeetLab/
+LeetLab/                                # Turborepo root (npm workspaces)
 │
 ├── README.md (this file)
-├── docker-compose.yml                 # Frontend + backend + ws + postgres + redis
+├── package.json                       # Root scripts (turbo) + workspaces config
+├── turbo.json                         # Turborepo task pipeline
+├── docker-compose.yml                 # frontend + backend + ws + postgres + redis
 │
-├── ws/                                # Real-time messaging WebSocket server
-│   ├── server.js                      # Room-based relay (comment/vote/typing/presence)
-│   ├── package.json
-│   ├── Dockerfile
-│   ├── README.md
-│   └── .env.example                   # WS_PORT (default 4001)
-│
-├── backend/                           # Node.js Express API
-│   ├── package.json
-│   ├── prisma/
-│   │   ├── schema.prisma              # Database schema (9 models)
-│   │   └── migrations/                # Database version history
-│   │       └── */                     # Each timestamped migration
+├── apps/
 │   │
-│   └── src/
-│       ├── index.js                   # Express server entry point
-│       │
-│       ├── routes/                    # API endpoint definitions
-│       │   ├── auth.routes.js         # /api/v1/auth
-│       │   ├── problem.routes.js      # /api/v1/problems
-│       │   ├── submission.routes.js   # /api/v1/submissions
-│       │   ├── execute-code.routes.js # /api/v1/execute-code
-│       │   ├── discussion.routes.js   # /api/v1/discuss
-│       │   ├── playlist.routes.js     # /api/v1/playlist
-│       │   ├── contests.routes.js     # /api/v1/contests
-│       │   ├── leaderboard.routes.js  # /api/v1/leaderboard
-│       │   └── users.routes.js        # /api/v1/users
-│       │
-│       ├── controllers/               # Business logic & API handlers
-│       │   ├── auth.controller.js     # register, login, logout
-│       │   ├── problem.controller.js  # CRUD problems, test case validation
-│       │   ├── submission.controller.js # Save & process submissions
-│       │   ├── execute-code.controller.js # Code execution endpoint
-│       │   ├── discussion.controller.js # Forum management
-│       │   ├── playlist.controller.js # Playlist operations
-│       │   ├── contests.controller.js # Contest management
-│       │   ├── leaderboard.controller.js # Rating & rankings
-│       │   └── users.controller.js    # User profiles & settings
-│       │
-│       ├── libs/                      # Shared utilities
-│       │   ├── db.js                  # Prisma client instance
-│       │   ├── execution.service.js   # Run code, evaluate & persist results
-│       │   ├── queue.js               # BullMQ execution queue
-│       │   ├── activity.lib.js        # Heatmap & streak logic
-│       │   └── auth.middleware.js     # JWT verification
-│       │
-│       ├── executor/                  # Warm-container code execution engine
-│       │   ├── index.js               # runSubmissions + pool lifecycle
-│       │   ├── languages.js           # Language/image config & id maps
-│       │   ├── pool.js                # Container pool (acquire/release/recycle)
-│       │   ├── dockerExecutor.js      # Compile once, run many
-│       │   └── docker.client.js       # dockerode client & exec helpers
-│       │
-│       └── middleware/
-│           └── auth.middleware.js     # Protected route middleware
-│
-├── frontend/                          # React + TypeScript frontend (Vite)
-│   ├── package.json
-│   ├── vite.config.ts                 # Vite bundler config
-│   ├── tsconfig.json
-│   ├── index.html
-│   ├── .env.example                   # VITE_API_URL, VITE_WS_URL, VITE_CLERK_PUBLISHABLE_KEY
+│   ├── ws/                            # Real-time messaging WebSocket server
+│   │   ├── server.js                  # Room-based relay (comment/vote/typing/presence)
+│   │   ├── package.json               # leetlab-ws (depends on @repo/db)
+│   │   ├── Dockerfile                 # Built from the monorepo root context
+│   │   ├── README.md
+│   │   └── .env.example               # WS_PORT (default 4001)
 │   │
-│   └── src/
-│       ├── main.tsx                   # React entry point
-│       ├── App.tsx                    # Root component
-│       ├── styles.css                 # Global styles
-│       │
-│       ├── routes/                    # Page components (React Router)
-│       │   ├── index.tsx              # Home / Dashboard
-│       │   ├── login.tsx              # Auth page
-│       │   ├── register.tsx           # Registration page
-│       │   ├── problems.tsx           # Problems list
-│       │   ├── problems.$problemId.tsx # Problem editor (split-pane)
-│       │   ├── submissions.tsx        # Submission history
-│       │   ├── discuss.tsx            # Discussions forum
-│       │   ├── discuss.new.tsx        # Create discussion
-│       │   ├── discuss.$postId.tsx    # Discussion details
-│       │   ├── contests.tsx           # Contest list
-│       │   ├── contests.$slug.tsx     # Contest details
-│       │   ├── leaderboard.tsx        # Global leaderboard
-│       │   ├── playlists.tsx          # Playlist browser
-│       │   ├── playlists.$id.tsx      # Playlist details
-│       │   ├── profile.tsx            # User profile
-│       │   ├── u.$username.tsx        # Public profile view
-│       │   ├── admin.tsx              # Admin dashboard
-│       │   ├── admin.problems.new.tsx # Create problem
-│       │   ├── admin.problems.edit.tsx# Edit problem
-│       │   ├── admin.contests.new.tsx # Create contest
-│       │   ├── admin.contests.tsx     # Manage contests
-│       │   └── admin.users.tsx        # User management
-│       │
-│       ├── components/                # Reusable React components
-│       │   ├── site-header.tsx        # Navigation bar
-│       │   ├── create-problem-form.tsx# Problem creation form
-│       │   ├── add-to-playlist-button.tsx
-│       │   ├── profile-heatmap.tsx    # Activity heatmap
-│       │   ├── submission-analytics.tsx # Stats charts
-│       │   ├── topic-ring-chart.tsx   # Difficulty breakdown
-│       │   ├── monthly-streak-tracker.tsx
-│       │   ├── ai-code-review-panel.tsx
-│       │   ├── difficulty-badge.tsx
-│       │   ├── empty-state.tsx
-│       │   ├── background-animation.tsx
-│       │   └── ui/                    # Shadcn/UI components
-│       │       ├── button.tsx
-│       │       ├── input.tsx
-│       │       ├── select.tsx
-│       │       ├── dialog.tsx
-│       │       └── ... (30+ Radix UI primitives)
-│       │
-│       ├── hooks/                     # Custom React hooks
-│       │   └── use-mobile.tsx         # Responsive design hook
-│       │
-│       └── lib/                       # Utilities & helpers
-│           ├── api.ts                 # Typed REST API client (fetch)
-│           ├── auth-context.tsx       # Auth context provider
-│           ├── theme-context.tsx      # Dark/light mode
-│           ├── clerk.ts               # Clerk config (social login)
-│           ├── use-realtime-room.ts   # WebSocket hook for live discussions
-│           └── utils.ts               # Helper functions
+│   ├── backend/                       # Node.js Express API
+│   │   ├── package.json               # backend (depends on @repo/db)
+│   │   ├── Dockerfile                 # Built from the monorepo root context
+│   │   └── src/
+│   │       ├── index.js               # Express server entry point + CORS
+│   │       │
+│   │       ├── routes/                # API endpoint definitions
+│   │       │   ├── auth.js            # /api/v1/auth
+│   │       │   ├── problem.js         # /api/v1/problems
+│   │       │   ├── submission.routes.js   # /api/v1/submissions
+│   │       │   ├── execute-code.routes.js # /api/v1/execute-code
+│   │       │   ├── discussion.routes.js   # /api/v1/discussions
+│   │       │   ├── comment.routes.js      # /api/v1/comments
+│   │       │   ├── playlist.routes.js     # /api/v1/playlist
+│   │       │   ├── contest.routes.js      # /api/v1/contests
+│   │       │   ├── leaderboard.routes.js  # /api/v1/leaderboard
+│   │       │   ├── analytics.routes.js    # /api/v1/analytics
+│   │       │   ├── rating.routes.js       # /api/v1/ratings
+│   │       │   ├── ai.routes.js           # /api/v1/ai
+│   │       │   └── users.routes.js        # /api/v1/users
+│   │       │
+│   │       ├── controllers/           # Business logic & API handlers
+│   │       │   └── *.controller.js    # auth, problem, submission, contest, …
+│   │       │
+│   │       ├── libs/                  # Shared utilities (import db from "@repo/db")
+│   │       │   ├── execution.service.js   # Run code, evaluate & persist results
+│   │       │   ├── queue.js               # BullMQ execution queue
+│   │       │   ├── activity.lib.js        # Heatmap & streak logic
+│   │       │   └── rating.lib.js          # Elo rating helpers
+│   │       │
+│   │       ├── workers/
+│   │       │   └── execution.worker.js    # BullMQ worker (bounded concurrency)
+│   │       │
+│   │       ├── executor/              # Warm-container code execution engine
+│   │       │   ├── index.js           # runSubmissions + pool lifecycle
+│   │       │   ├── languages.js       # Language/image config & id maps
+│   │       │   ├── pool.js            # Container pool (acquire/release/recycle)
+│   │       │   ├── dockerExecutor.js  # Compile once, run many
+│   │       │   └── docker.client.js   # dockerode client & exec helpers
+│   │       │
+│   │       └── middleware/
+│   │           └── auth.middleware.js # JWT / optional-auth / admin guards
+│   │
+│   └── frontend/                      # React + TypeScript frontend (Vite)
+│       ├── package.json               # leetlab-frontend
+│       ├── vite.config.ts
+│       ├── tsconfig.json
+│       ├── index.html
+│       ├── .env.example               # VITE_API_URL, VITE_WS_URL, VITE_CLERK_PUBLISHABLE_KEY
+│       └── src/
+│           ├── main.tsx               # React entry point
+│           ├── App.tsx                # Root component + routes
+│           ├── styles.css             # Global styles (Tailwind 4)
+│           ├── routes/                # Page components (React Router)
+│           ├── components/            # Reusable components + components/ui (Shadcn)
+│           ├── hooks/                 # Custom React hooks
+│           └── lib/                   # api.ts, auth-context, theme-context, clerk, …
 │
-│       # Server state is handled by TanStack React Query (no Zustand store).
+└── packages/                          # Shared workspace packages
+    │
+    ├── db/                            # @repo/db — shared Prisma layer
+    │   ├── package.json               # db:generate / db:migrate / db:deploy scripts
+    │   ├── prisma.config.ts           # Prisma config (schema + migrations path)
+    │   ├── src/index.js               # Exports `db` (PrismaClient) + enums/types
+    │   └── prisma/
+    │       ├── schema.prisma          # Database schema (all models)
+    │       └── migrations/            # Database version history
+    │
+    ├── ui/                            # @repo/ui — shared React components
+    ├── eslint-config/                 # @repo/eslint-config — shared ESLint config
+    └── typescript-config/             # @repo/typescript-config — shared tsconfig
+
+# Server state is handled by TanStack React Query (no Zustand store).
+# The generated Prisma client lives in packages/db/src/generated (gitignored).
 ```
 
 ---
@@ -1181,7 +1148,7 @@ is in at most one room at a time. The relay never persists; it only fans out eve
 | server → client | `{ type: "joined", room, count }` | Join acknowledgement |
 
 The frontend consumes this via the `useRealtimeRoom(room, handlers)` hook
-(`frontend/src/lib/use-realtime-room.ts`), used by the problem-page discussion
+(`apps/frontend/src/lib/use-realtime-room.ts`), used by the problem-page discussion
 panel and the `discuss/:postId` thread page. It auto-reconnects on drop.
 
 ---
@@ -1251,24 +1218,28 @@ panel and the `discuss/:postId` thread page. It auto-reconnects on drop.
 - **Docker** (Docker Desktop / Engine) — required by the warm-container code executor
 - **Redis** (optional) — only if you enable the execution queue (`QUEUE_ENABLED=true`)
 
-### Step 1: Clone Repository
+> This is a Turborepo. You install **once at the root** and run everything with
+> `turbo` — no per-folder `npm install`.
+
+### Step 1: Clone & Install
 
 ```bash
 git clone https://github.com/your-org/leetlab.git
 cd leetlab
+
+# Install all workspaces (apps + packages) in one go.
+# This also runs the @repo/db postinstall, which generates the Prisma client.
+npm install
 ```
 
-### Step 2: Backend Setup
+### Step 2: Configure Environment
+
+Create the env files each app/package needs (copy from the matching `.env.example`):
 
 ```bash
-cd backend
-
-# Install dependencies
-npm install
-
-# Create environment file
-cat > .env << EOF
-DATABASE_URL="postgresql://user:password@localhost:5432/leetlab"
+# Backend API (apps/backend/.env)
+cat > apps/backend/.env << EOF
+DATABASE_URL="postgresql://postgres:password@localhost:5432/leetlab"
 JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
 PORT=3000
 NODE_ENV="development"
@@ -1282,58 +1253,57 @@ REDIS_URL="redis://localhost:6379"
 CLERK_SECRET_KEY=""
 EOF
 
-# Create database and run migrations
-npx prisma migrate deploy
-
-# Seed initial data (optional)
-npx prisma db seed
-
-# Start backend server
-npm run dev
-# Server runs on http://localhost:3000
-```
-
-> 💡 The warm-container executor needs the Docker daemon running. On first run it
-> pulls/builds the language images, so the very first execution can be slow.
-
-### Step 3: Realtime WebSocket Server
-
-```bash
-cd ../ws
-
-# Install dependencies
-npm install
-
-# (optional) override the port
-cat > .env << EOF
-WS_PORT=4001
+# DB package (packages/db/.env) — used by the Prisma CLI (generate/migrate/studio).
+# Use the SAME DATABASE_URL as the backend.
+cat > packages/db/.env << EOF
+DATABASE_URL="postgresql://postgres:password@localhost:5432/leetlab"
 EOF
 
-# Start the relay
-npm run start        # or: npm run dev  (auto-restart)
-# WS server runs on ws://localhost:4001
-```
-
-### Step 4: Frontend Setup
-
-```bash
-cd ../frontend
-
-# Install dependencies
-npm install
-
-# Create environment file
-cat > .env << EOF
+# Frontend (apps/frontend/.env)
+cat > apps/frontend/.env << EOF
 VITE_API_URL="http://localhost:3000/api/v1"
 VITE_WS_URL="ws://localhost:4001"
 # Optional: enables Google/GitHub buttons on login/register
 VITE_CLERK_PUBLISHABLE_KEY=""
 EOF
-
-# Start development server
-npm run dev
-# Frontend runs on http://localhost:5173
 ```
+
+### Step 3: Set Up the Database
+
+The Prisma schema, migrations, and client live in the shared `@repo/db` package.
+Run these from the **repo root**:
+
+```bash
+# Generate the Prisma client (also runs automatically on npm install)
+npm run db:generate
+
+# Apply migrations to your database
+npm run db:deploy          # production-style: applies committed migrations
+# ...or, while developing the schema:
+npm run db:migrate         # create + apply a new dev migration
+
+# Optional: open Prisma Studio
+npm run db:studio
+```
+
+### Step 4: Run Everything
+
+```bash
+# Start all apps (frontend + backend + ws) together via Turborepo
+npm run dev
+# Frontend: http://localhost:5173   API: http://localhost:3000   WS: ws://localhost:4001
+```
+
+To run a single app instead of the whole stack:
+
+```bash
+npm run dev --workspace=backend          # API only
+npm run dev --workspace=leetlab-frontend # frontend only
+npm run dev --workspace=leetlab-ws       # WS relay only
+```
+
+> 💡 The warm-container executor needs the Docker daemon running. On first run it
+> pulls/builds the language images, so the very first execution can be slow.
 
 ### Step 5: Verify Installation
 
@@ -1348,7 +1318,8 @@ npm run dev
 
 The included `docker-compose.yml` builds and wires every service (frontend,
 backend, **ws**, PostgreSQL, Redis) — and mounts the host Docker socket so the
-backend can run the warm-container executor.
+backend can run the warm-container executor. The backend and ws images build
+from the **monorepo root context** so the shared `@repo/db` package is available.
 
 ```bash
 # Build and run the whole stack
