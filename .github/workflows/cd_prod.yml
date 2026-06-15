@@ -1,0 +1,69 @@
+# Builds the 3 Docker images (backend, ws, frontend), pushes them to Docker Hub,
+# then updates the Leetlab-cluster repo with the new image tag (GitOps style).
+# Runs automatically on every push to the "main" branch.
+
+name: Continuous Deployment (Prod)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Download your code into the runner
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Log in to Docker Hub (uses secrets you set in repo settings)
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 3. Build the BACKEND image and push it (tagged with the commit id)
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/backend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/leetlab-backend:${{ github.sha }}
+
+      # 4. Build the WEBSOCKET image and push it
+      - name: Build & push ws
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/ws/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/leetlab-ws:${{ github.sha }}
+
+      # 5. Build the FRONTEND image and push it
+      - name: Build & push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/frontend
+          file: ./apps/frontend/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/leetlab-frontend:${{ github.sha }}
+
+      # 6. Update the cluster repo so the new images get deployed (GitOps)
+      - name: Clone prog-ops repo and Update Leetlab-cluster repo
+        env:
+          PAT: ${{ secrets.PAT }}
+        run: |
+          git clone https://github.com/Abhinandankaushik/Leetlab-cluster.git
+          cd Leetlab-cluster
+
+          sed -i "s|image: .*/leetlab-backend:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/leetlab-backend:${{ github.sha }}|"  prod/backend/deployment.yml
+          sed -i "s|image: .*/leetlab-ws:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/leetlab-ws:${{ github.sha }}|"            prod/ws/deployment.yml
+          sed -i "s|image: .*/leetlab-frontend:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/leetlab-frontend:${{ github.sha }}|" prod/frontend/deployment.yml
+
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git commit -am "Update leetlab images to ${{ github.sha }}"
+          git push https://${PAT}@github.com/Abhinandankaushik/Leetlab-cluster.git main
