@@ -52,7 +52,7 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/leetlab-frontend:${{ github.sha }}
 
       # 6. Update the cluster repo so the new images get deployed (GitOps)
-      - name: Clone prog-ops repo and Update Leetlab-cluster repo
+      - name: Clone prod-ops repo and Update Leetlab-cluster repo
         env:
           PAT: ${{ secrets.PAT }}
         run: |
