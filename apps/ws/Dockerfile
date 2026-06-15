@@ -12,9 +12,6 @@ RUN npm install --ignore-scripts
 COPY packages/db ./packages/db
 COPY apps/ws ./apps/ws
 
-# Generate the Prisma client so @repo/db is importable at runtime.
-RUN npm run db:generate -w @repo/db
-
 EXPOSE 4001
 
 CMD ["npm", "run", "start", "-w", "leetlab-ws"]
