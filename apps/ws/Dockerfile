@@ -1,6 +1,6 @@
 # Build context is the monorepo ROOT (see docker-compose.yml) so the shared
 # @repo/db workspace package is available to the WebSocket service.
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
