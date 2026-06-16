@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Discussions
+    url: https://github.com/Abhinandankaushik/LeetLab/discussions
+    about: Ask questions, share ideas, and discuss LeetLab with the community.
+  - name: 🐙 Maintainer on GitHub
+    url: https://github.com/Abhinandankaushik
+    about: Reach out to the maintainer (@Abhinandankaushik) on GitHub.
+  - name: 💼 Connect on LinkedIn
+    url: https://www.linkedin.com/in/abhinandan16/
+    about: Connect with Abhinandan Kaushik on LinkedIn.

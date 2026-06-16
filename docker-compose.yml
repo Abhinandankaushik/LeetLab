@@ -1,0 +1,67 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:mysecret@postgres-db:5432/postgres
+      - ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+      - REDIS_URL=redis://redis:6379
+      - QUEUE_ENABLED=true
+      - EXECUTION_CONCURRENCY=5
+      - EXECUTOR_LANGUAGES=python,gcc
+    volumes:
+      # Lets the backend talk to the host Docker Engine to manage the warm
+      # execution containers (code runs in sandboxed containers via the socket).
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - postgres-db
+      - redis
+
+  ws:
+    build:
+      context: .
+      dockerfile: apps/ws/Dockerfile
+    ports:
+      - "4001:4001"
+    environment:
+      - WS_PORT=4001
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://backend:3000/api/v1
+      # WebSocket relay for real-time discussions (host-exposed on 4001).
+      - VITE_WS_URL=ws://localhost:4001
+    depends_on:
+      - backend
+      - ws
+
+  postgres-db:
+    image: postgres:15
+    environment:
+      - POSTGRES_PASSWORD=mysecret
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:

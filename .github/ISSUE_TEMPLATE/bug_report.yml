@@ -1,0 +1,81 @@
+name: "🐛 Bug Report"
+description: Report a bug or unexpected behavior in LeetLab
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections below so we can reproduce and fix it quickly.
+
+  - type: checkboxes
+    id: pre-checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I have searched the existing issues and this bug has not been reported yet.
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: When I do X, Y happens instead of Z.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the issue?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: service
+    attributes:
+      label: Which part is affected?
+      options:
+        - Frontend (apps/frontend)
+        - Backend API (apps/backend)
+        - Realtime / WebSocket (apps/ws)
+        - Database / Prisma (packages/db)
+        - Docker / Deployment
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, browser, Node version, Docker version, etc.
+      placeholder: |
+        - OS: Windows 11
+        - Browser: Chrome 125
+        - Node: 22.x
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or screenshots
+      description: Paste any error logs or attach screenshots. (Logs are automatically formatted as code.)
+      render: shell
+    validations:
+      required: false

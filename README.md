@@ -1,26 +1,1459 @@
-# LeetLab-V1
-LeetLab online coding platform where user can create and solve a problem ... (# LeetLab
+# 🚀 LeetLab: Premium Competitive Coding Platform
 
-LeetLab is a coding problem platform inspired by LeetCode, where users can **create**, **post**, and **solve** coding problems. The goal is to provide a platform for learning and practicing algorithmic problems with a hands-on approach.
+![LeetLab](https://img.shields.io/badge/LeetLab-v1.0-blueviolet)
+![React](https://img.shields.io/badge/React-19-blue)
+![Express](https://img.shields.io/badge/Express-5.1-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791)
+![Docker](https://img.shields.io/badge/Docker-Sandbox-2496ED)
+![WebSocket](https://img.shields.io/badge/WebSocket-Realtime-orange)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-## 🚀 Features
+**LeetLab** is a modern, high-performance competitive coding platform that enables developers to create, solve, and discuss complex algorithmic problems. It pairs a premium glassmorphism UI with a self-hosted warm-container code executor, real-time discussions over WebSockets, contests, activity tracking, and community engagement tools — every screen is wired to the backend with no static data.
 
-- ✍️ Users can **create** and **post** their own coding problems.
-- ✅ Users can **solve** problems posted by others.
-- 🔒 **Authentication** with JWT and secure password handling using bcrypt.
-- 🧠 Built for practicing DSA and contributing to the developer community.
+> 🧱 **Monorepo** — the codebase is a [Turborepo](https://turborepo.com/) with
+> npm workspaces. Apps live under `apps/*` and shared code under `packages/*`
+> (notably `@repo/db`, the Prisma layer shared by the backend and WS services).
+
+### 🧩 Services at a glance
+
+| Service | Location | Default Port | Responsibility |
+|---------|----------|--------------|----------------|
+| **Frontend** | `apps/frontend/` | `5173` | React + Vite single-page app |
+| **Backend API** | `apps/backend/` | `3000` | Express REST API, auth, executor orchestration |
+| **Realtime (WebSocket)** | `apps/ws/` | `4001` | Live discussion messaging relay |
+| **Database package** | `packages/db/` | — | Shared Prisma client + schema/migrations (`@repo/db`) |
+| **PostgreSQL** | (Docker) | `5432` | Primary data store |
+| **Redis** | (Docker) | `6379` | Optional execution queue (BullMQ) |
+| **Docker Engine** | host socket | — | Warm-container code sandbox |
+
+**Live Demo**: [Coming Soon] | **Documentation**: [Wiki](docs/) | **Report Bug**: [Issues](../../issues)
+
+---
+
+## 📋 Table of Contents
+
+- [Key Features](#-key-features)
+- [Tech Stack](#-tech-stack)
+- [System Architecture](#-system-architecture)
+- [Database Schema](#-detailed-database-schema)
+- [Project Structure](#-project-structure)
+- [API Endpoints](#-api-endpoints)
+- [Frontend Components](#-frontend-components)
+- [Setup Instructions](#-setup-instructions)
+- [Design Philosophy](#-design-philosophy)
+- [Contributing](#-contributing)
+
+---
+
+## ⭐ Key Features
+
+### 🧠 Advanced Problem Solving
+- **Split-Pane Editor**: Monaco editor with full-screen coding environment
+- **Real-time Test Validation**: Instant feedback on test case execution
+- **Multiple Language Support**: Python, JavaScript (Node), Java, C++, and C — each backed by its own warm-container pool
+- **Reference Solutions**: Community and editorial solutions with syntax highlighting
+
+### ⚡ Code Execution
+- **Warm-Container Engine**: Sandboxed code execution in a pool of pre-warmed Docker containers (compile once, run many)
+- **Performance Metrics**: Memory usage, execution time tracking
+- **Detailed Test Results**: Per-test-case stdout, stderr, compilation output
+- **Code Snippets**: Language-specific boilerplate templates for each problem
+
+### 📊 Analytics & Tracking
+- **Activity Heatmap**: Year-long heatmap with historical filtering
+- **Streak System**: Current and longest problem-solving streaks
+- **Progress Analytics**: Difficulty-wise and topic-wise problem breakdown
+- **Submission History**: Complete audit trail of all attempts with metadata
+
+### 🎯 Competitive Contests
+- **Contest Management**: Create, schedule, and run contests
+- **Live Leaderboards**: Real-time standings with rating calculations
+- **Participant Tracking**: Registration and performance analytics
+- **Rating System**: Elo-based rating with contest multipliers
+
+### 💬 Real-time Discussions
+- **Live Messaging**: WebSocket-powered chat on every problem page and discussion thread
+- **Instant Sync**: New comments, deletes, and votes broadcast to everyone viewing the same thread — no refresh
+- **Presence & Typing**: Live viewer count and "is typing…" indicators
+- **REST-backed Persistence**: The WS layer only mirrors activity; data is still saved via the API, so history survives reloads
+
+### 📚 Community Features
+- **Problem Discussions**: Per-problem forums for hints and editorials
+- **Comment Threading**: Discussions with upvote/downvote system
+- **AI Code Review**: Automated code analysis and optimization suggestions
+- **Dynamic Playlists**: Curated problem sets for interview prep and learning
+
+### 🔐 Authentication
+- **Email / Password**: Stateless JWT auth in HttpOnly cookies (bcrypt-hashed passwords)
+- **Social Login (OAuth)**: Google & GitHub via Clerk — optional, drops in without changing the existing login/register UI
+- **Role-based Access**: `ADMIN` vs `USER` with protected routes on both client and server
+
+### 👤 User Profiles
+- **Rich Profiles**: Bio, social links (GitHub, LinkedIn), skills, location
+- **Achievement Badges**: Streak milestones, problem-solving achievements
+- **Public Profiles**: Shareable profile URLs with anonymized stats option
+- **Network Discovery**: Find and follow other developers
+
+---
 
 ## 🛠 Tech Stack
 
-| Tech | Description |
-|------|-------------|
-| **Backend** | Node.js, Express.js |
-| **ORM** | Prisma |
-| **Database** | PostgreSQL |
-| **Authentication** | JWT (JSON Web Tokens), bcrypt.js |
-| **Deployment Ready** | Currently (Yes) but On K8s which is currently not public |
-| **Queue System** | Redis queue |
-|
+### Frontend
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Framework** | React 19 + TypeScript | Component-based UI with type safety |
+| **Routing** | React Router DOM v6 | Client-side page navigation |
+| **Styling** | Tailwind CSS 4 | Utility-first responsive design |
+| **Components** | Shadcn/UI + Radix UI | Accessible, composable UI primitives |
+| **Editor** | Monaco Editor | Professional code editing experience |
+| **Resizable Panels** | react-resizable-panels | Draggable split-pane workspace |
+| **Server State** | TanStack React Query | Data fetching, caching, invalidation |
+| **Local State** | React Context | Auth & theme providers |
+| **Realtime** | Native WebSocket (`useRealtimeRoom`) | Live discussion sync |
+| **Auth (OAuth)** | @clerk/clerk-react | Optional Google / GitHub social login |
+| **Charts** | Recharts | Data visualization (heatmap, analytics) |
+| **Forms** | React Hook Form + Zod | Form state & schema validation |
+| **Markdown** | react-markdown + remark-gfm | Rendering problem/discussion content |
+| **Icons** | Lucide React | SVG icon library |
+| **Notifications** | Sonner | Toast notifications |
+| **Build** | Vite 7 | Lightning-fast dev server & HMR |
 
-...Inspired by Leetcode)
+### Backend
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Runtime** | Node.js 18+ | JavaScript server environment |
+| **Framework** | Express.js 5.1 | REST API server |
+| **Language** | JavaScript (ES Modules) | Dynamic typing for rapid development |
+| **ORM** | Prisma 7.8 | Type-safe database queries |
+| **Database** | PostgreSQL 15+ | Relational database |
+| **Auth** | JWT + HttpOnly Cookies | Secure stateless authentication |
+| **OAuth** | @clerk/backend | Verifies Google / GitHub social login |
+| **Password Security** | bcryptjs | Password hashing with salt rounds |
+| **Code Execution** | Docker + dockerode | Warm-container sandbox (compile once, run many) |
+| **Queue** | BullMQ + ioredis | Bounded-concurrency execution throttling |
+| **Middleware** | CORS, Cookie-Parser | Request handling |
+| **Environment** | dotenv | Configuration management |
+
+### Realtime Service (`apps/ws/`)
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Runtime** | Node.js (ES Modules) | Standalone process |
+| **Transport** | `ws` (WebSocket) | Room-based pub/sub relay |
+| **State** | In-memory rooms | Stateless — no persistence (REST owns data) |
+| **Events** | comment / delete / vote / typing / presence | Live discussion sync |
+
+### Infrastructure & DevOps
+| Component | Tech | Purpose |
+|-----------|------|---------|
+| **Database** | PostgreSQL | Data persistence |
+| **Cache / Queue** | Redis | BullMQ execution queue (optional) |
+| **Code Execution** | Docker warm-container pool | Sandboxed compilation & execution |
+| **Realtime** | WebSocket server | Live discussion messaging |
+| **Orchestration** | Docker Compose | One-command multi-service stack |
+| **API Version** | REST (v1) | Versioned API for backwards compatibility |
+| **Session** | HttpOnly Cookies | Secure credential storage |
+| **Development** | Nodemon | Auto-reload on file changes |
+
+---
+
+## 🏗 System Architecture
+
+### 1️⃣ Complete System Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph Frontend ["🎨 FRONTEND (React + Vite)"]
+        Components["📦 Components<br/>(Problems, Editor)"]
+        Routing["🔀 React Router"]
+        State["🎯 State Management<br/>(React Query + Context)"]
+        UI["🖼️ UI System<br/>(Shadcn/UI)"]
+        Editor["✏️ Monaco Editor"]
+    end
+
+    subgraph APIClient ["🌐 API Client Layer"]
+        Fetch["Fetch API"]
+        Cache["Response Cache"]
+        Auth["Auth Handler"]
+    end
+
+    subgraph Backend ["⚙️ BACKEND (Express + Node.js)"]
+        subgraph Routes ["Routes Layer"]
+            AuthR["🔐 auth.routes"]
+            ProblemR["📝 problem.routes"]
+            SubR["📤 submission.routes"]
+            CodeR["💻 execute-code"]
+            DiscR["💬 discussion"]
+            PlaylistR["🎵 playlist"]
+            ContestR["🏆 contests"]
+            LeaderR["🏅 leaderboard"]
+        end
+
+        subgraph Controllers ["Controllers Layer"]
+            AuthC["auth.controller"]
+            ProblemC["problem.controller"]
+            SubC["submission.controller"]
+            CodeC["execute-code.controller"]
+        end
+
+        subgraph Libs ["Library Layer"]
+            DB["🗄️ db.js<br/>(Prisma ORM)"]
+            Executor["⚙️ executor/<br/>(warm-container pool)"]
+            ActivityLib["📊 activity.lib.js"]
+            AuthMW["🔒 auth.middleware"]
+        end
+    end
+
+    subgraph Realtime ["🔌 REALTIME (ws/)"]
+        WSServer["📡 WebSocket Relay<br/>(rooms, presence, typing)"]
+    end
+
+    subgraph External ["🗄️ EXTERNAL SERVICES"]
+        Postgres[("🗄️ PostgreSQL<br/>Database")]
+        Redis[("⚡ Redis<br/>BullMQ Queue (optional)")]
+        Docker["🐳 Docker Engine<br/>(Sandboxed Execution)"]
+    end
+
+    Components --> Routing
+    Routing --> State
+    State --> Editor
+    
+    Components --> Fetch
+    Fetch --> Cache
+    Cache --> Auth
+    
+    Auth -->|HTTP| AuthR
+    Auth -->|HTTP| ProblemR
+    Auth -->|HTTP| SubR
+    Auth -->|HTTP| CodeR
+    Auth -->|HTTP| DiscR
+    Auth -->|HTTP| PlaylistR
+
+    Components -->|WebSocket| WSServer
+    WSServer -->|broadcast| Components
+    
+    AuthR --> AuthMW
+    AuthMW --> AuthC
+    ProblemR --> AuthMW
+    AuthMW --> ProblemC
+    SubR --> AuthMW
+    AuthMW --> SubC
+    CodeR --> AuthMW
+    AuthMW --> CodeC
+    
+    AuthC --> DB
+    ProblemC --> DB
+    SubC --> DB
+    CodeC --> Executor
+    CodeC -.->|enqueue| Redis
+    Redis -.->|worker| Executor
+    Executor --> Docker
+    
+    DB --> Postgres
+    Docker -->|Results| Executor
+    Executor --> ActivityLib
+    ActivityLib --> DB
+
+    style Frontend fill:#1e40af,stroke:#0284c7,color:#fff,stroke-width:3px
+    style Backend fill:#15803d,stroke:#16a34a,color:#fff,stroke-width:3px
+    style Realtime fill:#b45309,stroke:#f59e0b,color:#fff,stroke-width:3px
+    style External fill:#7c2d12,stroke:#ea580c,color:#fff,stroke-width:3px
+    style APIClient fill:#6b21a8,stroke:#9333ea,color:#fff,stroke-width:3px
+```
+
+### 2️⃣ Code Submission Flow (User Journey)
+
+```mermaid
+sequenceDiagram
+    participant User as 👤 User (Browser)
+    participant Frontend as 🎨 React App
+    participant API as 🌐 API Client
+    participant Backend as ⚙️ Express Backend
+    participant Executor as 🐳 Warm-Container Pool
+    participant Database as 🗄️ PostgreSQL
+
+    User->>Frontend: Clicks "Submit" button
+    Note over Frontend: Validates code
+    Frontend->>API: POST /api/v1/submissions
+    Note over API: Adds JWT auth cookie
+    
+    API->>Backend: HTTP Request (with auth)
+    Backend->>Backend: Verify JWT token
+    Backend->>Backend: Validate input
+    Backend->>Database: Create Submission record
+    Database-->>Backend: Return submission ID
+    
+    Backend->>Executor: Borrow warm container
+    Note over Executor: Compile once
+    Executor->>Executor: Run all test cases (reusing artifact)
+    Executor-->>Backend: Return per-testcase results
+    
+    Backend->>Database: Create TestCaseResult entries
+    Backend->>Database: Update ProblemSolved (if accepted)
+    Backend->>Database: Update UserActivity (heatmap)
+    Backend->>Database: Update streak counters
+    
+    Backend-->>API: JSON response
+    API-->>Frontend: Update state
+    Frontend->>Frontend: Render results
+    Frontend-->>User: Show "Accepted ✓" or error
+    User->>Frontend: Check heatmap (updated)
+```
+
+### 3️⃣ User Authentication Flow
+
+```mermaid
+graph LR
+    A["👤 User<br/>Login Page"] -->|Email/Password| B["🔐 POST /auth/login"]
+    B --> C{"✓ Valid<br/>Credentials?"}
+    C -->|No| D["❌ Error Response"]
+    D --> A
+    
+    C -->|Yes| E["🔒 Hash comparison<br/>bcryptjs"]
+    E --> F["🔑 JWT Sign<br/>7 day expiry"]
+    F --> G["🍪 HttpOnly Cookie<br/>Set-Cookie header"]
+    G --> H["✅ Auth Success<br/>User object"]
+    H --> I["🎨 Frontend<br/>Auth context"]
+    I --> J["🏠 Dashboard<br/>Authenticated"]
+    
+    J -->|Make API call| K["🔐 Fetch with credentials"]
+    K -->|Cookie auto-sent| L["⚙️ Backend"]
+    L --> M["🔒 auth.middleware<br/>Verify JWT"]
+    M --> N{"🔑 Valid<br/>Token?"}
+    N -->|No| O["❌ 401 Unauthorized"]
+    N -->|Yes| P["✅ Attach user to req"]
+    P --> Q["📝 Controller/Logic"]
+    
+    style A fill:#1e40af,stroke:#0284c7,color:#fff
+    style B fill:#15803d,stroke:#16a34a,color:#fff
+    style E fill:#7c2d12,stroke:#ea580c,color:#fff
+    style F fill:#6b21a8,stroke:#9333ea,color:#fff
+    style J fill:#1e40af,stroke:#0284c7,color:#fff
+```
+
+### 4️⃣ Real-time Discussion Flow (WebSocket)
+
+The WS server (`apps/ws/`) is a stateless relay. Persistence always goes through the REST API; the relay only mirrors live activity to everyone in the same room (a room key = discussion id).
+
+```mermaid
+sequenceDiagram
+    participant A as 👤 User A
+    participant WS as 📡 WS Relay (ws/)
+    participant B as 👤 User B
+    participant API as ⚙️ Backend API
+    participant DB as 🗄️ PostgreSQL
+
+    A->>WS: join(room = discussionId)
+    B->>WS: join(room = discussionId)
+    WS-->>A: presence(count)
+    WS-->>B: presence(count)
+
+    Note over A: Types a comment
+    A->>WS: typing(user)
+    WS-->>B: typing(user) → "A is typing…"
+
+    A->>API: POST /comments/add (persist)
+    API->>DB: Insert comment
+    DB-->>API: Saved comment
+    API-->>A: { comment }
+    A->>WS: comment(comment)
+    WS-->>B: comment(comment) → appended live (no refresh)
+```
+
+---
+
+## 📊 Detailed Database Schema
+
+### 📋 Complete Entity-Relationship Diagram (ER Model)
+
+```mermaid
+erDiagram
+    USER ||--o{ PROBLEM : creates
+    USER ||--o{ SUBMISSION : makes
+    USER ||--o{ PROBLEM_SOLVED : achieves
+    USER ||--o{ PLAYLIST : owns
+    USER ||--o{ DISCUSSION : posts
+    USER ||--o{ COMMENT : writes
+    USER ||--o{ USER_ACTIVITY : tracks
+    USER ||--o{ CONTEST : creates
+    USER ||--o{ CONTEST_PARTICIPANT : joins
+    
+    PROBLEM ||--o{ SUBMISSION : "has many"
+    PROBLEM ||--o{ PROBLEM_SOLVED : "solved by"
+    PROBLEM ||--o{ DISCUSSION : "discussed in"
+    PROBLEM ||--o{ PROBLEM_IN_PLAYLIST : "added to"
+    PROBLEM ||--o{ CONTEST_PROBLEM : "in contests"
+    
+    SUBMISSION ||--o{ TEST_CASE_RESULT : "has results"
+    
+    PLAYLIST ||--o{ PROBLEM_IN_PLAYLIST : "contains"
+    
+    DISCUSSION ||--o{ COMMENT : "has comments"
+    
+    CONTEST ||--o{ CONTEST_PROBLEM : "has problems"
+    CONTEST ||--o{ CONTEST_PARTICIPANT : "has participants"
+
+    USER {
+        uuid id PK
+        string name
+        string email UK
+        string password
+        enum role
+        string bio
+        string location
+        string github
+        int currentStreak
+        int longestStreak
+        datetime createdAt
+    }
+
+    PROBLEM {
+        uuid id PK
+        string title
+        string description
+        enum difficulty
+        array tags
+        json examples
+        string constraints
+        json testcases
+        json codeSnippets
+        uuid userId FK
+    }
+
+    SUBMISSION {
+        uuid id PK
+        uuid userId FK
+        uuid problemId FK
+        string language
+        string status
+        string memory
+        string time
+    }
+
+    TEST_CASE_RESULT {
+        uuid id PK
+        uuid submissionId FK
+        int testCase
+        boolean passed
+        string status
+    }
+
+    PROBLEM_SOLVED {
+        uuid id PK
+        uuid userId FK
+        uuid problemId FK
+        datetime createdAt
+    }
+
+    PLAYLIST {
+        uuid id PK
+        string name
+        string description
+        uuid userId FK
+    }
+
+    PROBLEM_IN_PLAYLIST {
+        uuid id PK
+        uuid playlistId FK
+        uuid problemId FK
+    }
+
+    DISCUSSION {
+        uuid id PK
+        string title
+        string content
+        int upvotes
+        uuid userId FK
+        uuid problemId FK
+    }
+
+    COMMENT {
+        uuid id PK
+        string content
+        uuid userId FK
+        uuid discussionId FK
+    }
+
+    CONTEST {
+        uuid id PK
+        string slug UK
+        string name
+        string status
+        datetime startTime
+        datetime endTime
+        uuid createdById FK
+    }
+
+    CONTEST_PROBLEM {
+        uuid id PK
+        uuid contestId FK
+        uuid problemId FK
+        string label
+    }
+
+    CONTEST_PARTICIPANT {
+        uuid id PK
+        uuid contestId FK
+        uuid userId FK
+    }
+
+    USER_ACTIVITY {
+        uuid id PK
+        uuid userId FK
+        string dateKey UK
+        int count
+        datetime createdAt
+    }
+```
+
+### 🔗 Detailed Model Relationships Map
+
+```mermaid
+graph TB
+    subgraph CoreModels["🎯 Core Models"]
+        User["👤 User<br/>(Identity & Auth)<br/>18 fields"]
+        Problem["📝 Problem<br/>(Problem Definitions)<br/>15 fields"]
+        Submission["📤 Submission<br/>(Code Attempts)<br/>12 fields"]
+    end
+
+    subgraph TestingModels["🧪 Testing & Results"]
+        TestCase["✅ TestCaseResult<br/>(Per-Test Tracking)<br/>10 fields"]
+    end
+
+    subgraph TrackingModels["📊 Tracking & Analytics"]
+        ProblemSolved["🏆 ProblemSolved<br/>(Achievement Log)<br/>4 fields"]
+        UserActivity["📈 UserActivity<br/>(Heatmap Data)<br/>6 fields"]
+    end
+
+    subgraph CommunityModels["💬 Community Features"]
+        Playlist["🎵 Playlist<br/>(Problem Collections)<br/>5 fields"]
+        ProblemInPlaylist["📋 ProblemInPlaylist<br/>(Junction Table)<br/>4 fields"]
+        Discussion["💭 Discussion<br/>(Forum Threads)<br/>7 fields"]
+        Comment["💬 Comment<br/>(Thread Replies)<br/>5 fields"]
+    end
+
+    subgraph ContestModels["🏆 Contests"]
+        Contest["🎯 Contest<br/>(Event Management)<br/>11 fields"]
+        ContestProblem["📝 ContestProblem<br/>(Problems in Contest)<br/>5 fields"]
+        ContestParticipant["👥 ContestParticipant<br/>(Registration Log)<br/>4 fields"]
+    end
+
+    User -->|creates| Problem
+    User -->|makes| Submission
+    User -->|achieves| ProblemSolved
+    User -->|owns| Playlist
+    User -->|posts| Discussion
+    User -->|writes| Comment
+    User -->|tracks| UserActivity
+    User -->|creates| Contest
+    User -->|joins| ContestParticipant
+
+    Problem -->|has many| Submission
+    Problem -->|solved by| ProblemSolved
+    Problem -->|discussed in| Discussion
+    Problem -->|added to| ProblemInPlaylist
+    Problem -->|in contests| ContestProblem
+
+    Submission -->|has results| TestCase
+    Submission -->|triggers| UserActivity
+    Submission -->|marks if success| ProblemSolved
+
+    Playlist -->|contains| ProblemInPlaylist
+    ProblemInPlaylist -->|references| Problem
+
+    Discussion -->|has comments| Comment
+    
+    Contest -->|has problems| ContestProblem
+    Contest -->|has participants| ContestParticipant
+    ContestProblem -->|references| Problem
+    ContestParticipant -->|references| User
+
+    style User fill:#1e40af,stroke:#0284c7,color:#fff,stroke-width:3px
+    style Problem fill:#15803d,stroke:#16a34a,color:#fff,stroke-width:3px
+    style Submission fill:#7c2d12,stroke:#ea580c,color:#fff,stroke-width:3px
+    style TestCase fill:#6b21a8,stroke:#9333ea,color:#fff,stroke-width:2px
+    style Contest fill:#dc2626,stroke:#ef4444,color:#fff,stroke-width:2px
+```
+
+### Core Models Detailed
+
+#### **1. User Model**
+Purpose: Store user identity, authentication, and profile information.
+
+```prisma
+model User {
+  id                 String              @id @default(uuid())
+  name               String?
+  email              String              @unique
+  image              String?
+  role               UserRole            @default(USER)      // ADMIN or USER
+  password           String              // bcrypt hashed
+  bio                String?             // Profile bio
+  location           String?             // City, Country
+  github             String?             // GitHub username
+  linkedin           String?             // LinkedIn username
+  website            String?             // Personal website URL
+  skills             String[]            // Array of skill tags
+  currentStreak      Int                 @default(0)
+  lastSolvedDate     String?             // ISO date of last solve
+  longestStreak      Int                 @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  // Relations (1-to-Many)
+  Problem            Problem[]           // Problems created by user
+  Submission         Submission[]        // Code submissions
+  ProblemSolved      ProblemSolved[]     // Problems they solved
+  Playlist           Playlist[]          // Playlists created
+  Discussion         Discussion[]        // Discussion posts
+  Comment            Comment[]           // Comments on discussions
+  activities         UserActivity[]      // Daily activity tracking
+  createdContests    Contest[]           // Contests created
+  contestParticipations ContestParticipant[]
+}
+```
+
+**Key Features**:
+- Email uniqueness ensures no duplicate accounts
+- Password stored as bcrypt hash (never plain text)
+- Streak tracking for gamification
+- Profile enrichment with social links
+- Skills array for discovery and matching
+
+---
+
+#### **2. Problem Model**
+Purpose: Store algorithmic problem definitions and test cases.
+
+```prisma
+model Problem {
+  id                  String              @id @default(uuid())
+  title               String              // Problem title (e.g., "Two Sum")
+  description         String              // Full problem statement
+  defficulty          defficulty          // EASY | MEDIUM | HARD
+  tags                String[]            // Topics (Array, DP, Graph, etc.)
+  userId              String              // Creator's ID
+  examples            Json                // {input, output, explanation}
+  constraints         String              // Problem bounds (1 ≤ n ≤ 10^5)
+  hints               String?             // Optional solving hints
+  editorial           String?             // Official solution explanation
+
+  testcases           Json                // [{input: string, output: string}]
+  codeSnippets        Json                // {language: template_code}
+  referenceSolutions  Json                // {language: solution_code}
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Relations
+  user                User                @relation(fields: [userId])
+  submission          Submission[]        // All submissions for this problem
+  solvedBy            ProblemSolved[]     // Who solved this problem
+  ProblemsPlaylist    ProblemInPlaylist[] // In which playlists
+  discussions         Discussion[]        // Discussions about this problem
+  contestProblems     ContestProblem[]    // In which contests
+}
+```
+
+**Test Case Format** (stored as JSON):
+```json
+[
+  {
+    "input": "2\n7\n11\n15\n9",
+    "output": "0\n1",
+    "explanation": "Because nums[0] + nums[1] == 9"
+  }
+]
+```
+
+**Code Snippets Format**:
+```json
+{
+  "python": "def twoSum(nums, target):\n    # Your code here",
+  "javascript": "function twoSum(nums, target) {\n    // Your code here\n}",
+  "java": "class Solution {\n    public int[] twoSum(...) {...}\n}"
+}
+```
+
+---
+
+#### **3. Submission Model**
+Purpose: Log every code submission with execution results.
+
+```prisma
+model Submission {
+  id              String              @id @default(uuid())
+  userId          String
+  problemId       String
+  sourceCode      Json                // Code in target language
+  language        String              // python, javascript, java, cpp, c
+  stdin           String?             // Standard input
+  stdout          String?             // Program output
+  stderr          String?             // Error output
+  compileOutput   String?             // Compilation errors
+  status          String              // "Accepted", "Wrong Answer", "TLE", etc.
+  memory          String?             // Peak memory usage (KB)
+  time            String?             // Execution time (ms)
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  user            User                @relation(fields: [userId])
+  problem         Problem             @relation(fields: [problemId])
+  testCases       TestCaseResult[]    // Individual test case results
+}
+```
+
+**Status Values**: 
+- `"Accepted"` - All tests passed
+- `"Wrong Answer"` - Output mismatch
+- `"Time Limit Exceeded"` - Too slow
+- `"Runtime Error"` - Crash/exception
+- `"Compilation Error"` - Syntax error
+- `"Memory Limit Exceeded"` - Too much RAM
+
+---
+
+#### **4. TestCaseResult Model**
+Purpose: Detailed results for each test case in a submission.
+
+```prisma
+model TestCaseResult {
+  id              String              @id @default(uuid())
+  submissionId    String
+  testCase        Int                 // Test case index (1, 2, 3...)
+  passed          Boolean
+  stdout          String?             // Actual output
+  expected        String              // Expected output
+  stderr          String?
+  compileOutput   String?
+  status          String
+  memory          String?
+  time            String?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  submission      Submission          @relation(fields: [submissionId])
+
+  @@index([submissionId])
+}
+```
+
+---
+
+#### **5. Discussion & Comment Models**
+Purpose: Community forum per problem for sharing solutions and hints.
+
+```prisma
+model Discussion {
+  id            String              @id @default(uuid())
+  title         String              // Discussion topic
+  content       String              // Initial post
+  upvotes       Int                 @default(0)
+  userId        String
+  problemId     String
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  user          User                @relation(fields: [userId])
+  problem       Problem             @relation(fields: [problemId])
+  comments      Comment[]
+
+  @@index([problemId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Comment {
+  id            String              @id @default(uuid())
+  discussionId  String
+  userId        String
+  content       String
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  discussion    Discussion          @relation(fields: [discussionId])
+  user          User                @relation(fields: [userId])
+
+  @@index([discussionId, createdAt])
+  @@index([userId, createdAt])
+}
+```
+
+---
+
+#### **6. Playlist Model**
+Purpose: User-created problem collections for study paths or interview prep.
+
+```prisma
+model Playlist {
+  id            String              @id @default(uuid())
+  name          String              // "LC 75", "Interview Prep", etc.
+  description   String?
+  userId        String
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  problems      ProblemInPlaylist[]
+  user          User                @relation(fields: [userId])
+
+  @@unique([name, userId])            // Can't have duplicate names per user
+}
+
+model ProblemInPlaylist {
+  id            String              @id @default(uuid())
+  playlistId    String
+  problemId     String
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  Playlist      Playlist            @relation(fields: [playlistId])
+  problem       Problem             @relation(fields: [problemId])
+
+  @@unique([playlistId, problemId])   // Can't add same problem twice
+}
+```
+
+---
+
+#### **7. Contest Models**
+Purpose: Manage competitive programming contests.
+
+```prisma
+model Contest {
+  id            String              @id @default(uuid())
+  slug          String              @unique            // URL slug
+  name          String              // "LC Weekly 421"
+  description   String?
+  type          String              // "team", "individual"
+  status        String              @default("upcoming") // upcoming, live, ended
+  startTime     DateTime
+  endTime       DateTime
+  ratingFloor   Int?                // Min rating to participate
+  ratingCeil    Int?                // Max rating
+  createdById   String
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  createdBy     User                @relation(fields: [createdById])
+  problems      ContestProblem[]
+  participants  ContestParticipant[]
+}
+
+model ContestProblem {
+  id            String              @id @default(uuid())
+  contestId     String
+  problemId     String
+  label         String              // "A", "B", "C", etc.
+  points        Int                 @default(100)
+  createdAt     DateTime            @default(now())
+
+  contest       Contest             @relation(fields: [contestId])
+  problem       Problem             @relation(fields: [problemId])
+
+  @@unique([contestId, problemId])
+  @@index([contestId])
+}
+
+model ContestParticipant {
+  id            String              @id @default(uuid())
+  contestId     String
+  userId        String
+  registeredAt  DateTime            @default(now())
+
+  contest       Contest             @relation(fields: [contestId])
+  user          User                @relation(fields: [userId])
+
+  @@unique([contestId, userId])
+  @@index([userId])
+}
+```
+
+---
+
+#### **8. Problem Solved Tracker**
+Purpose: Track which problems each user has solved (achievement tracking).
+
+```prisma
+model ProblemSolved {
+  id            String              @id @default(uuid())
+  userId        String
+  problemId     String
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  user          User                @relation(fields: [userId])
+  problem       Problem             @relation(fields: [problemId])
+
+  @@unique([userId, problemId])  // Each user solves each problem once
+}
+```
+
+---
+
+#### **9. User Activity (Heatmap)**
+Purpose: Track daily activities for the GitHub-style contribution heatmap.
+
+```prisma
+model UserActivity {
+  id            String              @id @default(uuid())
+  userId        String
+  dateKey       String              // "2026-04-29" (YYYY-MM-DD)
+  count         Int                 @default(1)
+  lastSeenAt    DateTime            // Last action timestamp
+  createdAt     DateTime            @default(now())
+
+  user          User                @relation(fields: [userId])
+
+  @@unique([userId, dateKey])    // One entry per user per day
+  @@index([dateKey])             // Fast filtering by date
+}
+```
+
+---
+
+### Database Optimization
+
+**Indexes Used**:
+- `Discussion`: `(problemId, createdAt)` - Fast retrieval of recent discussions
+- `Comment`: `(discussionId, createdAt)` - Thread-ordered comments
+- `TestCaseResult`: `(submissionId)` - Quick lookup of test results
+- `ContestProblem`: `(contestId)` - All problems in a contest
+- `ContestParticipant`: `(userId)` - All contests user joined
+- `UserActivity`: `(dateKey)` - Heatmap generation
+
+**Cascade Deletes**:
+- Deleting a User cascades to: Problems, Submissions, Discussions, Comments, Playlists, Activities
+- Deleting a Problem cascades to: Submissions, TestCaseResults, Discussions, Comments
+
+---
+
+## 📁 Project Structure
+
+```
+LeetLab/                                # Turborepo root (npm workspaces)
+│
+├── README.md (this file)
+├── package.json                       # Root scripts (turbo) + workspaces config
+├── turbo.json                         # Turborepo task pipeline
+├── docker-compose.yml                 # frontend + backend + ws + postgres + redis
+│
+├── apps/
+│   │
+│   ├── ws/                            # Real-time messaging WebSocket server
+│   │   ├── server.js                  # Room-based relay (comment/vote/typing/presence)
+│   │   ├── package.json               # leetlab-ws (depends on @repo/db)
+│   │   ├── Dockerfile                 # Built from the monorepo root context
+│   │   ├── README.md
+│   │   └── .env.example               # WS_PORT (default 4001)
+│   │
+│   ├── backend/                       # Node.js Express API
+│   │   ├── package.json               # backend (depends on @repo/db)
+│   │   ├── Dockerfile                 # Built from the monorepo root context
+│   │   └── src/
+│   │       ├── index.js               # Express server entry point + CORS
+│   │       │
+│   │       ├── routes/                # API endpoint definitions
+│   │       │   ├── auth.js            # /api/v1/auth
+│   │       │   ├── problem.js         # /api/v1/problems
+│   │       │   ├── submission.routes.js   # /api/v1/submissions
+│   │       │   ├── execute-code.routes.js # /api/v1/execute-code
+│   │       │   ├── discussion.routes.js   # /api/v1/discussions
+│   │       │   ├── comment.routes.js      # /api/v1/comments
+│   │       │   ├── playlist.routes.js     # /api/v1/playlist
+│   │       │   ├── contest.routes.js      # /api/v1/contests
+│   │       │   ├── leaderboard.routes.js  # /api/v1/leaderboard
+│   │       │   ├── analytics.routes.js    # /api/v1/analytics
+│   │       │   ├── rating.routes.js       # /api/v1/ratings
+│   │       │   ├── ai.routes.js           # /api/v1/ai
+│   │       │   └── users.routes.js        # /api/v1/users
+│   │       │
+│   │       ├── controllers/           # Business logic & API handlers
+│   │       │   └── *.controller.js    # auth, problem, submission, contest, …
+│   │       │
+│   │       ├── libs/                  # Shared utilities (import db from "@repo/db")
+│   │       │   ├── execution.service.js   # Run code, evaluate & persist results
+│   │       │   ├── queue.js               # BullMQ execution queue
+│   │       │   ├── activity.lib.js        # Heatmap & streak logic
+│   │       │   └── rating.lib.js          # Elo rating helpers
+│   │       │
+│   │       ├── workers/
+│   │       │   └── execution.worker.js    # BullMQ worker (bounded concurrency)
+│   │       │
+│   │       ├── executor/              # Warm-container code execution engine
+│   │       │   ├── index.js           # runSubmissions + pool lifecycle
+│   │       │   ├── languages.js       # Language/image config & id maps
+│   │       │   ├── pool.js            # Container pool (acquire/release/recycle)
+│   │       │   ├── dockerExecutor.js  # Compile once, run many
+│   │       │   └── docker.client.js   # dockerode client & exec helpers
+│   │       │
+│   │       └── middleware/
+│   │           └── auth.middleware.js # JWT / optional-auth / admin guards
+│   │
+│   └── frontend/                      # React + TypeScript frontend (Vite)
+│       ├── package.json               # leetlab-frontend
+│       ├── vite.config.ts
+│       ├── tsconfig.json
+│       ├── index.html
+│       ├── .env.example               # VITE_API_URL, VITE_WS_URL, VITE_CLERK_PUBLISHABLE_KEY
+│       └── src/
+│           ├── main.tsx               # React entry point
+│           ├── App.tsx                # Root component + routes
+│           ├── styles.css             # Global styles (Tailwind 4)
+│           ├── routes/                # Page components (React Router)
+│           ├── components/            # Reusable components + components/ui (Shadcn)
+│           ├── hooks/                 # Custom React hooks
+│           └── lib/                   # api.ts, auth-context, theme-context, clerk, …
+│
+└── packages/                          # Shared workspace packages
+    │
+    ├── db/                            # @repo/db — shared Prisma layer
+    │   ├── package.json               # db:generate / db:migrate / db:deploy scripts
+    │   ├── prisma.config.ts           # Prisma config (schema + migrations path)
+    │   ├── src/index.js               # Exports `db` (PrismaClient) + enums/types
+    │   └── prisma/
+    │       ├── schema.prisma          # Database schema (all models)
+    │       └── migrations/            # Database version history
+    │
+    ├── ui/                            # @repo/ui — shared React components
+    ├── eslint-config/                 # @repo/eslint-config — shared ESLint config
+    └── typescript-config/             # @repo/typescript-config — shared tsconfig
+
+# Server state is handled by TanStack React Query (no Zustand store).
+# The generated Prisma client lives in packages/db/src/generated (gitignored).
+```
+
+---
+
+## 🔌 API Endpoints
+
+### Authentication (`/api/v1/auth`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|----------------|
+| POST | `/register` | Create new user account | No |
+| POST | `/login` | Authenticate user | No |
+| POST | `/logout` | Clear session | Yes |
+| GET | `/me` | Get current user profile | Yes |
+
+### Problems (`/api/v1/problems`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|----------------|
+| GET | `/` | List all problems (paginated) | No |
+| GET | `/:id` | Get problem details | No |
+| POST | `/` | Create new problem | Yes (Admin) |
+| PUT | `/:id` | Update problem | Yes (Creator) |
+| DELETE | `/:id` | Delete problem | Yes (Creator) |
+| GET | `/difficulty/:level` | Filter by difficulty | No |
+| GET | `/tags/:tag` | Filter by tag | No |
+| POST | `/:id/solve-verify` | Verify test cases | Yes |
+
+### Submissions (`/api/v1/submissions`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|----------------|
+| GET | `/` | Get user's submissions | Yes |
+| GET | `/:id` | Get submission details | Yes |
+| POST | `/` | Submit solution | Yes |
+| GET | `/problem/:id` | Submissions for problem | Yes |
+| GET | `/stats` | User submission stats | Yes |
+
+### Code Execution (`/api/v1/execute-code`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|----------------|
+| POST | `/run` | Execute code on test cases | Yes |
+| POST | `/batch-submit` | Batch test case execution | Yes |
+| POST | `/poll/:token` | Poll execution status | Yes |
+
+### Discussions (`/api/v1/discuss`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|----------------|
+| GET | `/` | List discussions | No |
+| GET | `/problem/:id` | Discussions for problem | No |
+| POST | `/` | Create discussion | Yes |
+| POST | `/:id/comment` | Add comment | Yes |
+| PUT | `/:id` | Edit discussion | Yes (Author) |
+| DELETE | `/:id` | Delete discussion | Yes (Author) |
+| POST | `/:id/upvote` | Upvote discussion | Yes |
+
+### Playlists (`/api/v1/playlist`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|----------------|
+| GET | `/` | List user playlists | Yes |
+| POST | `/` | Create playlist | Yes |
+| GET | `/:id` | Get playlist details | Yes |
+| PUT | `/:id` | Update playlist | Yes (Owner) |
+| DELETE | `/:id` | Delete playlist | Yes (Owner) |
+| POST | `/:id/problem` | Add problem to playlist | Yes (Owner) |
+| DELETE | `/:playlistId/problem/:problemId` | Remove problem | Yes (Owner) |
+
+### Contests (`/api/v1/contests`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|----------------|
+| GET | `/` | List all contests | No |
+| GET | `/:slug` | Get contest details | No |
+| POST | `/` | Create contest | Yes (Admin) |
+| POST | `/:id/register` | Join contest | Yes |
+| GET | `/:id/leaderboard` | Contest standings | No |
+| GET | `/:id/my-submissions` | User's contest submissions | Yes |
+
+### Leaderboard (`/api/v1/leaderboard`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|----------------|
+| GET | `/global` | Global leaderboard | No |
+| GET | `/global?range=week` | Weekly rankings | No |
+| GET | `/global?range=month` | Monthly rankings | No |
+| GET | `/contests/:id` | Contest leaderboard | No |
+| GET | `/user/:id` | User ranking details | No |
+
+### Users (`/api/v1/users`)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|----------------|
+| GET | `/:id` | Get user profile | No |
+| GET | `/:username` | Get profile by username | No |
+| PUT | `/` | Update profile | Yes |
+| GET | `/:id/solved` | Problems solved by user | No |
+| GET | `/:id/submissions` | Submissions by user | No |
+| GET | `/:id/activity` | User activity heatmap data | No |
+| POST | `/follow` | Follow user | Yes |
+| DELETE | `/follow/:userId` | Unfollow user | Yes |
+
+### Realtime WebSocket (`ws://<host>:4001`)
+
+Not a REST API — a JSON message relay. Rooms are keyed by discussion id. A socket
+is in at most one room at a time. The relay never persists; it only fans out events.
+
+| Direction | Message | Description |
+|-----------|---------|-------------|
+| client → server | `{ type: "join", room }` | Join a discussion room |
+| client → server | `{ type: "leave" }` | Leave current room |
+| client → server | `{ type: "comment", room, comment }` | Broadcast a newly created comment |
+| client → server | `{ type: "delete_comment", room, commentId }` | Broadcast a deletion |
+| client → server | `{ type: "vote", room, commentId, votes }` | Broadcast updated vote counts |
+| client → server | `{ type: "typing", room, user }` | Typing indicator |
+| server → client | `{ type: "comment" \| "delete_comment" \| "vote" \| "typing" }` | Relayed event |
+| server → client | `{ type: "presence", count }` | Live viewer count for the room |
+| server → client | `{ type: "joined", room, count }` | Join acknowledgement |
+
+The frontend consumes this via the `useRealtimeRoom(room, handlers)` hook
+(`apps/frontend/src/lib/use-realtime-room.ts`), used by the problem-page discussion
+panel and the `discuss/:postId` thread page. It auto-reconnects on drop.
+
+---
+
+## 🎨 Frontend Components
+
+### Core Components
+
+| Component | Location | Purpose | Props |
+|-----------|----------|---------|-------|
+| **SiteHeader** | `/components/site-header.tsx` | Navigation bar | `user`, `onLogout` |
+| **ProblemCard** | `/components/problem-card.tsx` | Problem listing item | `problem`, `solved` |
+| **CodeEditor** | (Monaco wrapper) | Split-pane editor | `code`, `language`, `onChange` |
+| **TestCasePanel** | (Custom) | Test results display | `results`, `loading` |
+| **ProfileHeatmap** | `/components/profile-heatmap.tsx` | Activity calendar | `userId`, `year` |
+| **SubmissionAnalytics** | `/components/submission-analytics.tsx` | Stats charts | `userId` |
+| **TopicRingChart** | `/components/topic-ring-chart.tsx` | Difficulty pie chart | `problems` |
+| **DifficultyBadge** | `/components/difficulty-badge.tsx` | Level indicator | `level` |
+| **CreateProblemForm** | `/components/CreateProblemForm.tsx` | Problem creation | `onSubmit` |
+| **AddToPlaylistButton** | `/components/add-to-playlist-button.tsx` | Playlist action | `problemId` |
+
+### UI System (Shadcn/UI)
+
+30+ reusable Radix UI primitives in `/components/ui/`:
+- Buttons, Inputs, Selects, Dialogs, Modals
+- Tabs, Dropdowns, Menus, Popovers, Tooltips
+- Checkboxes, Radio Groups, Sliders, Toggles
+- Cards, Separators, Badges, Alerts
+
+### Page Routes
+
+| Route | Component | Purpose |
+|-------|-----------|---------|
+| `/` | dashboard.tsx | Home/feed |
+| `/problems` | problems.tsx | Problem browser |
+| `/problems/:id` | problems.$problemId.tsx | Editor (main workspace) |
+| `/submissions` | submissions.tsx | Submission history |
+| `/discuss` | discuss.tsx | Forum |
+| `/discuss/new` | discuss.new.tsx | Create post |
+| `/discuss/:id` | discuss.$postId.tsx | Thread view |
+| `/contests` | contests.tsx | Contest list |
+| `/contests/:slug` | contests.$slug.tsx | Contest page |
+| `/leaderboard` | leaderboard.tsx | Global rankings |
+| `/playlists` | playlists.tsx | Playlist browser |
+| `/playlists/:id` | playlists.$id.tsx | Playlist view |
+| `/profile` | profile.tsx | User profile editor |
+| `/u/:username` | u.$username.tsx | Public profile |
+| `/login` | login.tsx | Authentication |
+| `/register` | register.tsx | Sign up |
+| `/admin` | admin.tsx | Admin dashboard |
+| `/admin/problems` | admin.problems.tsx | Problem management |
+| `/admin/problems/new` | admin.problems.new.tsx | Create problem |
+| `/admin/problems/:id/edit` | admin.problems.edit.tsx | Edit problem |
+| `/admin/contests` | admin.contests.tsx | Contest management |
+| `/admin/contests/new` | admin.contests.new.tsx | Create contest |
+| `/admin/users` | admin.users.tsx | User management |
+
+---
+
+## ⚙️ Setup Instructions
+
+### Prerequisites
+- **Node.js** v18 or later
+- **npm** v9 or later
+- **PostgreSQL** v14 or later
+- **Git** for version control
+- **Docker** (Docker Desktop / Engine) — required by the warm-container code executor
+- **Redis** (optional) — only if you enable the execution queue (`QUEUE_ENABLED=true`)
+
+> This is a Turborepo. You install **once at the root** and run everything with
+> `turbo` — no per-folder `npm install`.
+
+### Step 1: Clone & Install
+
+```bash
+git clone https://github.com/your-org/leetlab.git
+cd leetlab
+
+# Install all workspaces (apps + packages) in one go.
+# This also runs the @repo/db postinstall, which generates the Prisma client.
+npm install
+```
+
+### Step 2: Configure Environment
+
+Create the env files each app/package needs (copy from the matching `.env.example`):
+
+```bash
+# Backend API (apps/backend/.env)
+cat > apps/backend/.env << EOF
+DATABASE_URL="postgresql://postgres:password@localhost:5432/leetlab"
+JWT_SECRET="your-super-secret-jwt-key-min-32-chars"
+PORT=3000
+NODE_ENV="development"
+ALLOWED_ORIGINS="http://localhost:5173"
+# Code execution (warm-container pool). Requires Docker running.
+EXECUTOR_LANGUAGES="python,gcc"
+# Optional execution queue (needs Redis). Leave false to run inline.
+QUEUE_ENABLED="false"
+REDIS_URL="redis://localhost:6379"
+# Optional: social login (Google/GitHub) via Clerk. Leave unset to disable.
+CLERK_SECRET_KEY=""
+EOF
+
+# DB package (packages/db/.env) — used by the Prisma CLI (generate/migrate/studio).
+# Use the SAME DATABASE_URL as the backend.
+cat > packages/db/.env << EOF
+DATABASE_URL="postgresql://postgres:password@localhost:5432/leetlab"
+EOF
+
+# Frontend (apps/frontend/.env)
+cat > apps/frontend/.env << EOF
+VITE_API_URL="http://localhost:3000/api/v1"
+VITE_WS_URL="ws://localhost:4001"
+# Optional: enables Google/GitHub buttons on login/register
+VITE_CLERK_PUBLISHABLE_KEY=""
+EOF
+```
+
+### Step 3: Set Up the Database
+
+The Prisma schema, migrations, and client live in the shared `@repo/db` package.
+Run these from the **repo root**:
+
+```bash
+# Generate the Prisma client (also runs automatically on npm install)
+npm run db:generate
+
+# Apply migrations to your database
+npm run db:deploy          # production-style: applies committed migrations
+# ...or, while developing the schema:
+npm run db:migrate         # create + apply a new dev migration
+
+# Optional: open Prisma Studio
+npm run db:studio
+```
+
+### Step 4: Run Everything
+
+```bash
+# Start all apps (frontend + backend + ws) together via Turborepo
+npm run dev
+# Frontend: http://localhost:5173   API: http://localhost:3000   WS: ws://localhost:4001
+```
+
+To run a single app instead of the whole stack:
+
+```bash
+npm run dev --workspace=backend          # API only
+npm run dev --workspace=leetlab-frontend # frontend only
+npm run dev --workspace=leetlab-ws       # WS relay only
+```
+
+> 💡 The warm-container executor needs the Docker daemon running. On first run it
+> pulls/builds the language images, so the very first execution can be slow.
+
+### Step 5: Verify Installation
+
+1. Open browser to `http://localhost:5173`
+2. Navigate to `/register` and create account
+3. Create a test problem from `/admin/problems/new`
+4. Open the problem and test code submission
+5. Open the same problem in two windows → post a comment and watch it appear live
+6. Check `/leaderboard` for user ranking
+
+### Docker Setup (Recommended)
+
+The included `docker-compose.yml` builds and wires every service (frontend,
+backend, **ws**, PostgreSQL, Redis) — and mounts the host Docker socket so the
+backend can run the warm-container executor. The backend and ws images build
+from the **monorepo root context** so the shared `@repo/db` package is available.
+
+```bash
+# Build and run the whole stack
+docker compose up -d --build
+
+# Wait for services to start (30-60 seconds)
+# Frontend: http://localhost:5173   API: http://localhost:3000   WS: ws://localhost:4001
+```
+
+---
+
+## 💎 Design Philosophy
+
+### 🎨 **Visual Design: Premium Glassmorphism**
+
+LeetLab employs a sophisticated design language combining transparency, depth, and modern aesthetics:
+
+**Key Design Principles**:
+
+1. **Glassmorphism Elements**
+   - `backdrop-blur-md` for depth and layering
+   - Semi-transparent backgrounds (`bg-opacity-80`)
+   - Subtle border glows using CSS gradients
+   - Layered shadow effects for z-depth
+
+2. **Color System**
+   - **Dark Mode**: Deep slate (`#0f172a`) with vibrant accent colors
+   - **Light Mode**: Soft ivory (`#fafafa`) with muted accents
+   - **Accent**: Dynamic oklch colors for theme flexibility
+   - **Status Colors**:
+     - Green (`#10b981`) - Accepted/Success
+     - Red (`#ef4444`) - Wrong/Error
+     - Yellow (`#f59e0b`) - Pending/Warning
+     - Blue (`#3b82f6`) - Info/Processing
+
+3. **Typography**
+   - **Display / Headings**: Space Grotesk
+   - **Body**: Inter (weight 450, tuned letter-spacing + font smoothing)
+   - **Monospace**: JetBrains Mono for code & metrics
+   - **Scale**: 12px → 48px responsive scale
+
+4. **Spacing System**
+   - Tailwind's 4px base unit
+   - Consistent padding: `p-4`, `p-6`, `p-8`
+   - Gap system: `gap-3`, `gap-4`, `gap-6`
+
+5. **Interactive Micro-interactions**
+   ```css
+   /* Hover states */
+   hover:scale-105 hover:shadow-lg transition-all
+   
+   /* Focus states */
+   focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+   
+   /* Active animations */
+   group-hover:opacity-100 animate-pulse
+   ```
+
+### 🏗️ **System Architecture Principles**
+
+1. **Separation of Concerns**
+   - Routes → Controllers → Services → Database
+   - Component → Hooks → Store → API
+   - Clear responsibility boundaries
+
+2. **Scalability**
+   - Stateless backend (horizontal scaling)
+   - Database indexing on frequent queries
+   - Frontend state caching via React Query patterns
+   - Warm-container pool + bounded-concurrency queue for efficient execution
+
+3. **Security**
+   - JWT in HttpOnly cookies (CSRF protected)
+   - Password hashing with bcryptjs (salt rounds: 10)
+   - Request validation on all endpoints
+   - CORS with whitelisted origins
+   - SQL injection prevention via Prisma ORM
+
+4. **Performance**
+   - Lazy loading of routes (React.lazy)
+   - Image optimization (responsive imgs)
+   - API response caching (stale-while-revalidate)
+   - Database query optimization (eager loading)
+   - Compile-once / run-many execution in warm containers
+
+5. **User Experience**
+   - Real-time feedback on code execution
+   - Live discussions over WebSockets (instant comments, presence, typing)
+   - Skeleton loading states across every data-driven page
+   - Draggable, persisted split-pane workspace on the problem editor
+   - Responsive design (mobile-first)
+   - Dark/Light mode toggle
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+### Development Workflow
+
+1. **Fork & Clone**
+   ```bash
+   git clone https://github.com/your-fork/leetlab.git
+   cd leetlab
+   ```
+
+2. **Create Feature Branch**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+
+3. **Make Changes**
+   - Follow existing code style
+   - Write meaningful commit messages
+   - Add comments for complex logic
+   - Test locally before pushing
+
+4. **Submit Pull Request**
+   - Describe changes clearly
+   - Reference related issues
+   - Ensure CI checks pass
+   - Request review from maintainers
+
+### Code Style Guidelines
+
+- **Backend**: CommonJS exports, 2-space indent
+- **Frontend**: Functional components, TypeScript interfaces
+- **Database**: Use Prisma migrations for schema changes
+- **Git**: Conventional commits (feat:, fix:, docs:, style:, refactor:, test:)
+
+
+## 📄 License
+
+This project is licensed under the MIT License - see [LICENSE.md](LICENSE.md) for details.
+
 
